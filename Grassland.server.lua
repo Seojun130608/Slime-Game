@@ -55,43 +55,51 @@ local function shrub(position, parent)
     leaves.Shape = Enum.PartType.Ball
 end
 
--- 1. The long map and its enclosing edge walls.
-part("Grassland", V(192, 2, 500), V(0, -1, 5), palette.grass, map, Enum.Material.Grass)
+-- 1. A narrow corridor joins the wider ranch plaza.
+-- Separate floors remove the unused strips outside the tunnel walls.
+part("Grassland", V(102, 2, 610), V(0, -1, -180), palette.grass, map, Enum.Material.Grass)
+part("PlazaGround", V(192, 2, 130), V(0, -1, 190), palette.grass, map, Enum.Material.Grass)
 local walls = model("BoundaryWalls", map)
 for _, x in ipairs({-96, 96}) do
-    part("EdgeWall", V(4, 24, 500), V(x, 12, 5), palette.stone, walls)
-    part("WallCap", V(5, 1, 500), V(x, 24.5, 5), palette.trim, walls)
-    for z = -235, 245, 40 do
-        part("Buttress", V(6, 26, 6), V(x, 13, z), palette.dark, walls)
+    part("EdgeWall", V(4, 40, 130), V(x, 20, 190), palette.stone, walls)
+    part("WallCap", V(5, 1, 130), V(x, 40.5, 190), palette.trim, walls)
+    for z = 135, 255, 40 do
+        part("Buttress", V(6, 42, 6), V(x, 21, z), palette.dark, walls)
     end
 end
-for _, z in ipairs({-245, 255}) do
-    part("EndWall", V(192, 24, 4), V(0, 12, z), palette.stone, walls)
-    part("EndCap", V(192, 1, 5), V(0, 24.5, z), palette.trim, walls)
+-- Shoulders close the sides where the plaza meets the corridor.
+for _, x in ipairs({-73, 73}) do
+    part("PlazaShoulder", V(46, 40, 3), V(x, 20, 125), palette.stone, walls)
+    part("ShoulderCap", V(46, 1, 4), V(x, 40.5, 125), palette.trim, walls)
 end
+part("NorthEndWall", V(102, 40, 4), V(0, 20, -485), palette.stone, walls)
+part("NorthEndCap", V(102, 1, 5), V(0, 40.5, -485), palette.trim, walls)
+part("SouthEndWall", V(192, 40, 4), V(0, 20, 255), palette.stone, walls)
+part("SouthEndCap", V(192, 1, 5), V(0, 40.5, 255), palette.trim, walls)
 
--- 2. A straight path and a tunnel with a central skylight.
+-- 2. An open-air corridor with tall walls and wall-mounted lights.
 part("Plaza", V(172, 0.2, 122), V(0, 0.1, 190), palette.path, map)
 local tunnel = model("NurseryTunnel", map)
-part("MainPath", V(22, 0.18, 376), V(0, 0.09, -55), palette.path, tunnel)
+part("MainPath", V(22, 0.18, 616), V(0, 0.09, -175), palette.path, tunnel)
 for _, x in ipairs({-12, 12}) do
-    part("PathEdging", V(1, 0.24, 376), V(x, 0.12, -55), palette.trim, tunnel)
+    part("PathEdging", V(1, 0.24, 616), V(x, 0.12, -175), palette.trim, tunnel)
 end
 for _, x in ipairs({-49, 49}) do
-    part("TunnelWall", V(3, 17, 364), V(x, 8.5, -57), palette.stone, tunnel)
-    part("WallBase", V(4, 2, 364), V(x, 1, -57), palette.dark, tunnel)
-    part("RoofWing", V(19, 1.2, 364), V(x * 0.8, 22, -57), palette.dark, tunnel)
+    part("TunnelWall", V(3, 40, 604), V(x, 20, -177), palette.stone, tunnel)
+    part("WallBase", V(4, 2, 604), V(x, 1, -177), palette.dark, tunnel)
+    part("CorridorWallCap", V(4, 1, 604), V(x, 40.5, -177), palette.trim, tunnel)
 end
-for z = -230, 100, 55 do
+for z = -450, 100, 55 do
     for _, x in ipairs({-47, 47}) do
-        part("ArchColumn", V(4, 22, 5), V(x, 11, z), palette.dark, tunnel)
+        part("WallColumn", V(4, 42, 5), V(x, 21, z), palette.dark, tunnel)
         part("ColumnFoot", V(6, 2, 7), V(x, 1, z), palette.trim, tunnel)
     end
-    part("RoofFrame", V(98, 2, 5), V(0, 22, z), palette.wood, tunnel)
-    local lamp = part("CeilingLight", V(8, 0.3, 2), V(0, 20.8, z), C(255, 235, 170), tunnel, Enum.Material.Neon)
-    local light = Instance.new("PointLight")
-    light.Color, light.Brightness, light.Range = C(255, 235, 190), 0.65, 35
-    light.Parent = lamp
+    for _, x in ipairs({-45, 45}) do
+        local lamp = part("WallLight", V(0.5, 3, 2), V(x, 12, z), C(255, 235, 170), tunnel, Enum.Material.Neon)
+        local light = Instance.new("PointLight")
+        light.Color, light.Brightness, light.Range = C(255, 235, 190), 0.65, 28
+        light.Parent = lamp
+    end
 end
 sign("SLIME NURSERIES", V(44, 5, 1), V(0, 18, 126), palette.dark, tunnel)
 for _, x in ipairs({-25, 25}) do
@@ -136,12 +144,15 @@ end
 
 -- 4. Nursery bays leave the center lane clear.
 local nests = model("Nests", map)
-local nurseryPositions = {V(-27, 0, 45), V(27, 0, -65), V(-27, 0, -175)}
-local nurseryColors = {C(157, 196, 104), C(114, 184, 196), C(172, 150, 207)}
+local nurseryPositions = {V(-27, 0, 45), V(27, 0, -65), V(-27, 0, -175), V(27, 0, -285), V(-27, 0, -395)}
+local nurseryColors = {C(157, 196, 104), C(114, 184, 196), C(172, 150, 207), C(226, 183, 102), C(214, 137, 131)}
 for index, center in ipairs(nurseryPositions) do
     local nest = model("Nest" .. index, nests)
     nest:SetAttribute("SpawnCenter", center + V(0, 0.7, 0))
+    nest:SetAttribute("Zone", index)
     local accent = nurseryColors[index]
+    sign("ZONE 0" .. index, V(22, 3, 0.6), V(-35, 12, center.Z + 35), palette.dark, tunnel)
+    part("ZoneSignPost", V(1, 12, 1), V(-35, 6, center.Z + 35), accent, tunnel)
     cylinder("StonePlinth", 15, 0.5, center + V(0, 0.25, 0), palette.trim, nest)
     cylinder("SoftBed", 12, 0.2, center + V(0, 0.6, 0), accent, nest)
     for segment = 0, 31 do
@@ -167,6 +178,11 @@ if spawn then
     spawn.Transparency = 1
     spawn.CanCollide = false
     spawn.Neutral = true
+    for _, decoration in ipairs(spawn:GetChildren()) do
+        if decoration:IsA("Decal") or decoration:IsA("Texture") then
+            decoration.Transparency = 1
+        end
+    end
 end
-map:SetAttribute("MapVersion", "NurseryCorridor")
+map:SetAttribute("MapVersion", "OpenSkyFiveZoneCorridor")
 map.Parent = workspace
