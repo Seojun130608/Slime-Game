@@ -46,6 +46,7 @@ for index, slimeType in ipairs(types) do
     slime.Name = slimeType.name .. "Slime"
     slime:SetAttribute("SlimeType", slimeType.name)
     slime:SetAttribute("Rarity", slimeType.rarity)
+    slime:SetAttribute("NestIndex", nestIndex)
     slime.Parent = slimes
 
     -- The bottom is hidden beneath the ground for a flat-bottomed dome.

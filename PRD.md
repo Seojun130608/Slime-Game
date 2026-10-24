@@ -68,10 +68,11 @@ Luau
 
 ## 8. First Version
 
-- [x] One map: A grassland area with player bases and slime nests.
+- [x] One map: A grassy corridor with six fenced player bases, collection spots, and five slime nursery zones.
 - [x] Six slime types: Grass, Mud, Water, Honey, Crystal, and Gold, with rarities ranging from Common to Legendary.
-- Capturing: Use a Slime Grabber to pull babies free. Upgrade Grabber Power to capture heavier slimes.
-- Chases: A giant parent chases you after a successful capture.
+- [x] Capturing: Use a Slime Grabber to pull babies free. Upgrade Grabber Power to capture heavier slimes.
+- [x] Collection zone: Bring a carried baby to the entrance collection pad to secure it for the current session.
+- [x] Chases: A giant parent chases you after a successful capture.
 - Player competition: Use a Slime Bat to interrupt captures or make players drop slimes. Bases are safe.
 - Inventory and growth: Secured babies stay in inventory until placed. Hover to see their weight; placing them starts their growth.
 - Income: Placed slimes generate cash based on their type and weight.

@@ -1,13 +1,13 @@
 -- Roblox Luau: ServerScriptService > Grassland.
--- Map appearance only. Safe-zone and display-slot gameplay come later.
+-- Six fenced grass pens. Slime placement, income, and safe-zone protection come later.
 if workspace:FindFirstChild("SlimeMap") then return end
 local map = Instance.new("Model")
 map.Name = "SlimeMap"
 local V = Vector3.new
 local C = Color3.fromRGB
 local palette = {
-    grass = C(109, 164, 86), stone = C(213, 219, 194), trim = C(245, 235, 205),
-    dark = C(57, 82, 65), wood = C(145, 107, 74), path = C(224, 209, 169),
+    grass = C(102, 180, 72), stone = C(130, 166, 100), trim = C(230, 207, 162),
+    dark = C(78, 100, 53), wood = C(157, 111, 65), path = C(112, 187, 79),
 }
 
 -- One helper handles every anchored building block.
@@ -49,12 +49,6 @@ local function cylinder(name, radius, height, position, color, parent)
     p.CFrame = CFrame.new(position) * CFrame.Angles(0, 0, math.rad(90))
     return p
 end
-local function shrub(position, parent)
-    part("Planter", V(7, 1.3, 7), position + V(0, 0.65, 0), palette.trim, parent)
-    local leaves = part("Shrub", V(6, 5, 6), position + V(0, 3.1, 0), C(75, 133, 76), parent, Enum.Material.Grass)
-    leaves.Shape = Enum.PartType.Ball
-end
-
 -- 1. A narrow corridor joins the wider ranch plaza.
 -- Separate floors remove the unused strips outside the tunnel walls.
 part("Grassland", V(102, 2, 610), V(0, -1, -180), palette.grass, map, Enum.Material.Grass)
@@ -78,11 +72,11 @@ part("SouthEndWall", V(192, 40, 4), V(0, 20, 255), palette.stone, walls)
 part("SouthEndCap", V(192, 1, 5), V(0, 40.5, 255), palette.trim, walls)
 
 -- 2. An open-air corridor with tall walls and wall-mounted lights.
-part("Plaza", V(172, 0.2, 122), V(0, 0.1, 190), palette.path, map)
+part("Plaza", V(172, 0.2, 122), V(0, 0.1, 190), palette.path, map, Enum.Material.Grass)
 local tunnel = model("NurseryTunnel", map)
-part("MainPath", V(22, 0.18, 616), V(0, 0.09, -175), palette.path, tunnel)
+part("MainPath", V(22, 0.18, 616), V(0, 0.09, -175), palette.path, tunnel, Enum.Material.Grass)
 for _, x in ipairs({-12, 12}) do
-    part("PathEdging", V(1, 0.24, 616), V(x, 0.12, -175), palette.trim, tunnel)
+    part("PathEdging", V(1, 0.24, 616), V(x, 0.12, -175), C(78, 150, 59), tunnel, Enum.Material.Grass)
 end
 for _, x in ipairs({-49, 49}) do
     part("TunnelWall", V(3, 40, 604), V(x, 20, -177), palette.stone, tunnel)
@@ -101,45 +95,81 @@ for z = -450, 100, 55 do
         light.Parent = lamp
     end
 end
-sign("SLIME NURSERIES", V(44, 5, 1), V(0, 18, 126), palette.dark, tunnel)
-for _, x in ipairs({-25, 25}) do
-    part("GatewayPost", V(4, 21, 5), V(x, 10.5, 126), palette.dark, tunnel)
+-- Collection replaces the old overhead entrance sign.
+local collectZone = model("CollectZone", map)
+local pad = part("CollectionPad", V(95, 0.15, 4), V(0, 0.32, 126), C(158, 219, 166), collectZone)
+for _, z in ipairs({124.125, 127.875}) do
+    part("CollectionBorder", V(95, 0.2, 0.25), V(0, 0.45, z), C(205, 255, 211), collectZone, Enum.Material.Neon)
 end
+for _, x in ipairs({-47.375, 47.375}) do
+    part("CollectionBorder", V(0.25, 0.2, 4), V(x, 0.45, 126), C(205, 255, 211), collectZone, Enum.Material.Neon)
+end
+local floorGui = Instance.new("SurfaceGui")
+floorGui.Face, floorGui.SizingMode = Enum.NormalId.Top, Enum.SurfaceGuiSizingMode.PixelsPerStud
+floorGui.PixelsPerStud, floorGui.Parent = 30, pad
+local floorLabel = Instance.new("TextLabel")
+floorLabel.Size = UDim2.fromScale(1, 1)
+floorLabel.BackgroundTransparency = 1
+floorLabel.Text, floorLabel.TextColor3 = "COLLECT ZONE", C(37, 81, 51)
+floorLabel.Font, floorLabel.TextScaled = Enum.Font.GothamBold, true
+floorLabel.Parent = floorGui
+-- An invisible volume detects the player's position, not the carried body's.
+local trigger = part("CollectionTrigger", V(95, 12, 4), V(0, 6, 126), C(255, 255, 255), collectZone)
+trigger.Transparency, trigger.CanCollide, trigger.CanTouch, trigger.CanQuery = 1, false, false, false
 sign("STEAL A SLIME", V(48, 7, 1), V(0, 16, 248), palette.dark, map)
 
--- 3. Two ranch bases with shelter, fences, and decorative display pads.
+-- 3. Six open grass pens: three on either side of the center lane.
 local bases = model("Bases", map)
-for index, x in ipairs({-52, 52}) do
-    local base = model("Base" .. index, bases)
-    local accent = index == 1 and C(87, 148, 134) or C(112, 128, 178)
-    part("Foundation", V(62, 1, 64), V(x, 0.5, 183), palette.trim, base)
-    part("Deck", V(58, 0.18, 60), V(x, 1.09, 183), C(192, 163, 119), base, Enum.Material.WoodPlanks)
-    -- Low entry steps can be walked up without jumping.
-    part("Step", V(24, 0.5, 4), V(x, 0.25, 149), palette.trim, base)
-    part("SafeZoneBorder", V(58, 0.12, 1), V(x, 1.24, 152), C(181, 238, 197), base, Enum.Material.Neon)
-    for _, dx in ipairs({-27, 27}) do
-        for _, z in ipairs({190, 211}) do
-            part("ShelterPost", V(1.5, 13, 1.5), V(x + dx, 7.5, z), palette.wood, base)
+local fenceColor = C(175, 126, 74)
+local railColor = C(202, 157, 99)
+local function fenceRail(position, size, parent)
+    for _, height in ipairs({1.4, 3}) do
+        part("FenceRail", size, position + V(0, height, 0), railColor, parent, Enum.Material.Wood)
+    end
+end
+local function fencePost(position, parent)
+    part("FencePost", V(1.2, 4.3, 1.2), position + V(0, 2.15, 0), fenceColor, parent, Enum.Material.Wood)
+    part("PostCap", V(1.5, 0.3, 1.5), position + V(0, 4.45, 0), palette.trim, parent, Enum.Material.Wood)
+end
+for row, z in ipairs({156, 194, 232}) do
+    for sideIndex, side in ipairs({-1, 1}) do
+        local index = (row - 1) * 2 + sideIndex
+        local x = side * 55
+        local base = model("Base" .. index, bases)
+        base:SetAttribute("BaseIndex", index)
+        base:SetAttribute("EntrancePosition", V(side * 22, 0, z))
+        part("PenGrass", V(66, 0.12, 30), V(x, 0.06, z), C(117, 192, 83), base, Enum.Material.Grass)
+        -- Long fences at the north and south edges of each pen.
+        for _, dz in ipairs({-15, 15}) do
+            fenceRail(V(x, 0, z + dz), V(66, 0.45, 0.6), base)
+            for dx = -33, 33, 11 do
+                fencePost(V(x + dx, 0, z + dz), base)
+            end
         end
-        part("FenceRail", V(1, 1, 56), V(x + dx, 3, 183), palette.trim, base)
-        for z = 157, 209, 13 do
-            part("FencePost", V(1.6, 4, 1.6), V(x + dx, 3, z), palette.wood, base)
+        -- Back fence and two short front sections leave a 12-stud entrance.
+        local backX, frontX = side * 88, side * 22
+        fenceRail(V(backX, 0, z), V(0.6, 0.45, 30), base)
+        fencePost(V(backX, 0, z), base)
+        for _, dz in ipairs({-10.5, 10.5}) do
+            fenceRail(V(frontX, 0, z + dz), V(0.6, 0.45, 9), base)
+        end
+        fencePost(V(frontX, 0, z - 6), base)
+        fencePost(V(frontX, 0, z + 6), base)
+        local board = sign("BASE 0" .. index, V(8, 2.2, 0.5), V(frontX, 4, z - 10.5), palette.wood, base)
+        board.CFrame = CFrame.new(board.Position) * CFrame.Angles(0, -side * math.pi / 2, 0)
+        -- These are reserved spots; placement and income are later features.
+        local spots = model("CollectionSpots", base)
+        for column, dx in ipairs({-20, 0, 20}) do
+            for spotRow, dz in ipairs({-7, 7}) do
+                local spotIndex = (column - 1) * 2 + spotRow
+                local spot = model("Spot" .. spotIndex, spots)
+                spot:SetAttribute("SlotIndex", spotIndex)
+                spot:SetAttribute("Occupied", false)
+                cylinder("SpotBorder", 3.5, 0.14, V(x + dx, 0.2, z + dz), C(237, 225, 178), spot)
+                cylinder("CollectionSpot", 2.9, 0.1, V(x + dx, 0.32, z + dz), C(155, 213, 110), spot)
+            end
         end
     end
-    part("BackWall", V(56, 5, 1.5), V(x, 3.5, 212), accent, base)
-    for _, side in ipairs({-1, 1}) do
-        local roof = part("PitchedRoof", V(31, 1, 28), V(x + side * 14.5, 15, 200), accent, base)
-        roof.CFrame = CFrame.new(roof.Position) * CFrame.Angles(0, 0, math.rad(-side * 12))
-    end
-    sign("RANCH " .. index .. "  |  SAFE ZONE", V(40, 3, 0.6), V(x, 11, 214), palette.dark, base)
-    for _, dx in ipairs({-14, 14}) do
-        for _, z in ipairs({170, 192}) do
-            cylinder("DisplayPad", 5, 0.3, V(x + dx, 1.4, z), palette.trim, base)
-            cylinder("PadInset", 4.3, 0.1, V(x + dx, 1.6, z), accent, base)
-        end
-    end
-    shrub(V(x - 24, 0, 145), base)
-    shrub(V(x + 24, 0, 145), base)
 end
 
 -- 4. Nursery bays leave the center lane clear.
@@ -167,7 +197,7 @@ for index, center in ipairs(nurseryPositions) do
     part("Canopy", V(28, 1, 8), center + V(0, 9, -10), accent, nest)
     sign("NURSERY 0" .. index, V(22, 2.5, 0.5), center + V(0, 7, -8), palette.dark, nest)
     -- A short side path connects each bay to the main walkway.
-    part("NurseryApproach", V(12, 0.15, 7), V(center.X / 2, 0.075, center.Z), palette.path, tunnel)
+    part("NurseryApproach", V(12, 0.15, 7), V(center.X / 2, 0.075, center.Z), palette.path, tunnel, Enum.Material.Grass)
 end
 
 -- The existing spawn is reused so a second spawn is never created.
@@ -184,5 +214,5 @@ if spawn then
         end
     end
 end
-map:SetAttribute("MapVersion", "OpenSkyFiveZoneCorridor")
+map:SetAttribute("MapVersion", "SixGrassPens")
 map.Parent = workspace
