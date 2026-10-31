@@ -105,6 +105,7 @@ local function power(player)
     return math.clamp(value, 0, 1000000)
 end
 local function eligible(player, state)
+    if player:GetAttribute("DataReady")~=true then return false end
     local character = player.Character
     local root = character and character:FindFirstChild("HumanoidRootPart")
     local humanoid = character and character:FindFirstChildOfClass("Humanoid")

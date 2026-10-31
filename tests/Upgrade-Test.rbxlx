@@ -67407,7 +67407,82 @@ bindViewport()
 </ProtectedString>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="RBXUpgrades3">
+      <Item class="LocalScript" referent="RBXUpgrades10">
+        <Properties>
+          <string name="Name">SaveStatus</string>
+          <ProtectedString name="Source">local player=game:GetService("Players").LocalPlayer
+local gui=Instance.new("ScreenGui",player:WaitForChild("PlayerGui"))
+gui.Name,gui.ResetOnSpawn="SaveStatusUI",false
+local label=Instance.new("TextLabel",gui)
+label.AnchorPoint=Vector2.new(.5,0)
+label.Position,label.Size=UDim2.new(.5,0,0,36),UDim2.new(.9,0,0,24)
+label.BackgroundColor3,label.BackgroundTransparency=Color3.fromRGB(30,48,38),.15
+label.TextColor3,label.Font,label.TextSize=Color3.fromRGB(230,245,220),Enum.Font.GothamMedium,12
+label.TextWrapped=true
+local function update() label.Text=player:GetAttribute("SaveStatus") or "Loading progress..." end
+player:GetAttributeChangedSignal("SaveStatus"):Connect(update)
+update()
+return nil
+</ProtectedString>
+        </Properties>
+      </Item>
+      <Item class="LocalScript" referent="RBXUpgrades11">
+        <Properties>
+          <string name="Name">RebirthsUI</string>
+          <ProtectedString name="Source">local Players=game:GetService("Players")
+local RS=game:GetService("ReplicatedStorage")
+local player=Players.LocalPlayer
+local remote=RS:WaitForChild("SlimeRebirths")
+local gui=Instance.new("ScreenGui",player:WaitForChild("PlayerGui"))
+gui.Name,gui.ResetOnSpawn,gui.DisplayOrder="SlimeRebirthUI",false,6
+local function button(parent,text,pos,size)
+ local b=Instance.new("TextButton",parent);b.Text=text;b.Position=pos;b.Size=size
+ b.BackgroundColor3=Color3.fromRGB(120,90,180);b.TextColor3=Color3.new(1,1,1)
+ b.Font,b.TextSize=Enum.Font.GothamBold,16
+ local c=Instance.new("UICorner",b);c.CornerRadius=UDim.new(0,10)
+ return b
+end
+local open=button(gui,"REBIRTH",UDim2.new(1,-166,0,60),UDim2.fromOffset(150,44))
+local panel=Instance.new("Frame",gui);panel.Name="Panel";panel.Visible=false
+panel.AnchorPoint=Vector2.new(.5,.5);panel.Position=UDim2.fromScale(.5,.4);panel.Size=UDim2.new(.9,0,0,330)
+panel.BackgroundColor3=Color3.fromRGB(35,52,45)
+local bound=Instance.new("UISizeConstraint",panel);bound.MaxSize=Vector2.new(490,330)
+local info=Instance.new("TextLabel",panel);info.Name="Details";info.BackgroundTransparency=1
+info.Position=UDim2.fromOffset(16,10);info.Size=UDim2.new(1,-32,0,230)
+info.Font,info.TextSize,info.TextWrapped=Enum.Font.GothamBold,17,true;info.TextColor3=Color3.new(1,1,1)
+local confirm=button(panel,"REBIRTH",UDim2.new(0,16,0,244),UDim2.new(.65,-20,0,48))
+local close=button(panel,"CLOSE",UDim2.new(.65,0,0,244),UDim2.new(.35,-16,0,48))
+local notice=Instance.new("TextLabel",panel);notice.Name="Notice";notice.BackgroundTransparency=1
+notice.Position=UDim2.fromOffset(12,296);notice.Size=UDim2.new(1,-24,0,28)
+notice.Font,notice.TextSize,notice.TextWrapped=Enum.Font.GothamMedium,12,true;notice.TextColor3=Color3.new(1,1,1);notice.Text=""
+local data,armed,pending
+local function render()
+ if not data then info.Text="Loading...";return end
+ info.Text=string.format("REBIRTHS: %d  |  TOKENS: %d\nCash: $%.0f / $%.0f required\nIncome: %.1fx → %.1fx\nUpgrade limit: %d → %d\nReward: %d Slime Token\n\nResets ALL cash and both upgrades.\nKeeps your slimes and their growth.\nCheck the save status for cloud saving availability.",data.count,data.tokens,player:GetAttribute("Cash") or 0,data.requirement,data.multiplier,data.nextMultiplier,data.limit,data.nextLimit,data.reward)
+ confirm.Text=armed and "CONFIRM RESET" or "REBIRTH"
+end
+open.Activated:Connect(function()
+ panel.Visible=not panel.Visible;armed=false;notice.Text=""
+ if panel.Visible then
+  for _,name in ipairs({"SlimeUpgradesUI","SlimeInventoryUI"}) do local other=player.PlayerGui:FindFirstChild(name);if other then other.Panel.Visible=false end end
+  remote:FireServer("Request")
+ end
+ render()
+end)
+close.Activated:Connect(function() panel.Visible=false;armed=false end)
+confirm.Activated:Connect(function()
+ if not data or pending then return end
+ if (player:GetAttribute("Cash") or 0)&lt;data.requirement then confirm.Text="NEED MORE CASH";return end
+ if not armed then armed=true;render();return end
+ pending=true;armed=false;remote:FireServer("Rebirth")
+ task.delay(.6,function() pending=false end)
+end)
+remote.OnClientEvent:Connect(function(value) data=value;armed=false;render();if data.message then notice.Text=data.message end end)
+player:GetAttributeChangedSignal("Cash"):Connect(render)
+</ProtectedString>
+        </Properties>
+      </Item>
+      <Item class="LocalScript" referent="RBXUpgrades12">
         <Properties>
           <string name="Name">UpgradesUI</string>
           <ProtectedString name="Source">-- StarterPlayerScripts &gt; UpgradesUI. Buttons request purchases; the server decides.
@@ -67455,7 +67530,7 @@ local speed = label(panel, "Speed", 82, 42, "Loading...", 17)
 local speedBuy = button(panel, "BuySpeed", 128, "Loading...")
 local power = label(panel, "Grabber", 184, 48, "Loading...", 16)
 local powerBuy = button(panel, "BuyGrabber", 237, "Loading...")
-local notice = label(panel, "Notice", 287, 48, "Upgrades last this session. Saving comes later.", 14)
+local notice = label(panel, "Notice", 287, 48, "Progress saves when cloud saving is available; check the save status.", 14)
 local close = button(panel, "Close", 345, "CLOSE")
 local function update()
     local balance = player:GetAttribute("Cash") or 0
@@ -67517,7 +67592,7 @@ update(); remote:FireServer("Request")
 </ProtectedString>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="RBXUpgrades5">
+      <Item class="LocalScript" referent="RBXUpgrades14">
         <Properties>
           <string name="Name">UpgradeTestDriver</string>
           <ProtectedString name="Source">-- Included only in Upgrade-Test.rbxlx, never the playable place.
@@ -68137,65 +68212,19 @@ map.Parent = workspace
     </Item>
     <Item class="Script" referent="RBX5">
       <Properties>
-        <ProtectedString name="Source">-- Put this Script in ServerScriptService alongside Grassland.
--- Piece 1: one table stores the appearance and fixed rarity of each type.
-local types = {
-    {name = "Grass", rarity = "Common", color = Color3.fromRGB(110, 210, 80)},
-    {name = "Mud", rarity = "Common", color = Color3.fromRGB(135, 90, 60)},
-    {name = "Water", rarity = "Uncommon", color = Color3.fromRGB(70, 175, 245)},
-    {name = "Honey", rarity = "Rare", color = Color3.fromRGB(245, 160, 40)},
-    {name = "Crystal", rarity = "Epic", color = Color3.fromRGB(175, 115, 245)},
-    {name = "Gold", rarity = "Legendary", color = Color3.fromRGB(255, 215, 65)},
-}
-
--- Piece 2: a helper creates one anchored, rounded part.
-local function ball(name, size, position, color, parent)
-    local part = Instance.new("Part")
-    part.Name = name
-    part.Shape = Enum.PartType.Ball
-    part.Size = size
-    part.Position = position
-    part.Color = color
-    part.Material = Enum.Material.SmoothPlastic
-    part.Anchored = true
-    part.CanCollide = false
-    part.TopSurface = Enum.SurfaceType.Smooth
-    part.BottomSurface = Enum.SurfaceType.Smooth
-    part.Parent = parent
-    return part
-end
-
--- Piece 3: wait until Grassland has finished creating the nests.
-local map = workspace:WaitForChild("SlimeMap")
-local nests = map:WaitForChild("Nests")
+        <ProtectedString name="Source">local Catalog=require(script.Parent:WaitForChild("SlimeCatalog"))
+local Factory=require(script.Parent:WaitForChild("SlimeFactory"))
+local map=workspace:WaitForChild("SlimeMap")
+local nests=map:WaitForChild("Nests")
 if map:FindFirstChild("WildSlimes") then return end
-local slimes = Instance.new("Folder")
-slimes.Name = "WildSlimes"
-slimes.Parent = map
-
-for index, slimeType in ipairs(types) do
-    -- Two types per nest: indices 1/2, 3/4, and 5/6.
-    local nestIndex = math.ceil(index / 2)
-    local nest = nests:WaitForChild("Nest" .. nestIndex)
-    local center = nest:GetAttribute("SpawnCenter") or nest:GetBoundingBox().Position
-    local side = index % 2 == 1 and -4 or 4
-    local position = Vector3.new(center.X + side, center.Y, center.Z)
-
-    local slime = Instance.new("Model")
-    slime.Name = slimeType.name .. "Slime"
-    slime:SetAttribute("SlimeType", slimeType.name)
-    slime:SetAttribute("Rarity", slimeType.rarity)
-    slime:SetAttribute("NestIndex", nestIndex)
-    slime.Parent = slimes
-
-    -- The bottom is hidden beneath the ground for a flat-bottomed dome.
-    local body = ball("Body", Vector3.new(4, 3, 4), position + Vector3.new(0, 0.45, 0), slimeType.color, slime)
-    body.Transparency = 0.08
-    slime.PrimaryPart = body
-    local black = Color3.fromRGB(20, 20, 25)
-    ball("LeftEye", Vector3.new(0.28, 0.4, 0.22), position + Vector3.new(-0.65, 1, 1.77), black, slime)
-    ball("RightEye", Vector3.new(0.28, 0.4, 0.22), position + Vector3.new(0.65, 1, 1.77), black, slime)
-    ball("Mouth", Vector3.new(0.4, 0.18, 0.18), position + Vector3.new(0, 0.65, 1.98), black, slime)
+local slimes=Instance.new("Folder",map);slimes.Name="WildSlimes"
+for index,definition in ipairs(Catalog.Types) do
+ local nestIndex=math.ceil(index/2)
+ local nest=nests:WaitForChild("Nest"..nestIndex)
+ local center=nest:GetAttribute("SpawnCenter") or nest:GetBoundingBox().Position
+ local side=index%2==1 and -4 or 4
+ local model=Factory.Create(definition.name,center+Vector3.new(side,0,0))
+ model:SetAttribute("NestIndex",nestIndex);model.Parent=slimes
 end
 print("Slimes ready: Grass, Mud, Water, Honey, Crystal, Gold")
 </ProtectedString>
@@ -68363,6 +68392,7 @@ local function power(player)
     return math.clamp(value, 0, 1000000)
 end
 local function eligible(player, state)
+    if player:GetAttribute("DataReady")~=true then return false end
     local character = player.Character
     local root = character and character:FindFirstChild("HumanoidRootPart")
     local humanoid = character and character:FindFirstChildOfClass("Humanoid")
@@ -69078,6 +69108,10 @@ local RS=game:GetService("ReplicatedStorage")
 local Storage=game:GetService("ServerStorage")
 local RunService=game:GetService("RunService")
 local HttpService=game:GetService("HttpService")
+local RebirthRules=require(script.Parent:WaitForChild("RebirthRules"))
+local ProfileStore=require(script.Parent:WaitForChild("ProfileStore"))
+local SlimeFactory=require(script.Parent:WaitForChild("SlimeFactory"))
+local UpgradeRules=require(script.Parent:WaitForChild("UpgradeRules"))
 local Income=require(script.Parent:WaitForChild("IncomeRules"))
 local map=workspace:WaitForChild("SlimeMap")
 local bases=map:WaitForChild("Bases")
@@ -69087,13 +69121,15 @@ local secured=Storage:WaitForChild("SecuredSlimes")
 local remote=Instance.new("RemoteEvent",RS);remote.Name="SlimeInventory"
 local displays=Instance.new("Folder",map);displays.Name="PlacedSlimes"
 local GROW_SECONDS,CAPACITY,ACTION_INTERVAL=12,6,.15
-local states,owners,lastAction={}, {}, {}
+local states,owners,lastAction,loading={}, {}, {}, {}
 local random=Random.new()
+local place
+local function ready(p,state) return state and not state.closing and p:GetAttribute("DataReady")==true end
 local function notice(p,message) if p.Parent then remote:FireClient(p,"Message",message) end end
 local function rate(state)
     local total=0
     for _,record in pairs(state.items) do if record.inPen then total+=Income.Rate(record.kind,record.weight) end end
-    return total
+    return total * RebirthRules.Multiplier(state.rebirths)
 end
 local function settle(player,state)
     local now=os.clock()
@@ -69110,7 +69146,7 @@ local function snapshot(p)
     for id,r in pairs(state.items) do
         if r.inPen then count+=1 end
         table.insert(items,{id=id,kind=r.kind,rarity=r.rarity,weight=r.weight,color=r.source.PrimaryPart.Color,
-            inPen=r.inPen==true,progress=math.floor(r.progress*100+.0001)/100,rate=Income.Rate(r.kind,r.weight)})
+            inPen=r.inPen==true,progress=math.floor(r.progress*100+.0001)/100,rate=Income.Rate(r.kind,r.weight)*RebirthRules.Multiplier(state.rebirths)})
     end
     table.sort(items,function(a,b)return a.id&lt;b.id end)
     remote:FireClient(p,"Snapshot",{items=items,selected=state.selected,base=state.base and state.base:GetAttribute("BaseIndex"),
@@ -69121,7 +69157,7 @@ local spend=Instance.new("BindableFunction")
 spend.Name="TrySpendCash"
 spend.OnInvoke=function(p,amount)
     local state=states[p]
-    if not state or type(amount)~="number" or amount~=amount or amount&lt;=0 or amount==math.huge then return false end
+    if not ready(p,state) or state.rebirthing or type(amount)~="number" or amount~=amount or amount&lt;=0 or amount==math.huge then return false end
     settle(p,state)
     if state.cash&lt;amount then return false end
     state.cash-=amount -- No yielding between checking and subtracting.
@@ -69141,14 +69177,20 @@ local function claim(p)
     for _,base in ipairs(sorted) do
         if not owners[base] then
             owners[base],state.base=p,base;base:SetAttribute("OwnerUserId",p.UserId)
-            p:SetAttribute("BaseIndex",base:GetAttribute("BaseIndex"));showBaseName(base,p);snapshot(p);return
+            p:SetAttribute("BaseIndex",base:GetAttribute("BaseIndex"));showBaseName(base,p);snapshot(p)
+            if place then
+                for id,r in pairs(state.items) do
+                    if r.restoreInPen then place(p,id,true);r.restoreInPen=nil end
+                end
+            end
+            return
         end
     end
 end
 local function canUse(p,base)
     local state=states[p];local c=p.Character
     local root=c and c:FindFirstChild("HumanoidRootPart");local hum=c and c:FindFirstChildOfClass("Humanoid")
-    if not state or not base or state.base~=base or owners[base]~=p or not root or not hum or hum.Health&lt;=0 then return false end
+    if not ready(p,state) or not base or state.base~=base or owners[base]~=p or not root or not hum or hum.Health&lt;=0 then return false end
     local grass=base.PenGrass;local position=grass.CFrame:PointToObjectSpace(root.Position)
     return math.abs(position.X)&lt;=grass.Size.X*.5+4 and math.abs(position.Z)&lt;=grass.Size.Z*.5+4 and math.abs(position.Y)&lt;=12
 end
@@ -69189,11 +69231,11 @@ local function store(p,id)
     settle(p,state);snapshot(p);notice(p,"Returned to inventory. Stored slimes do not earn cash.")
     return true
 end
-local function place(p,id)
+place=function(p,id,restoring)
     local state=states[p];local r=state and state.items[id]
     if not r or r.inPen then return false end
     if not state.base then notice(p,"Waiting for an available pen.");return false end
-    if not canUse(p,state.base) then notice(p,"Stand in your own pen to release a slime.");return false end
+    if not restoring and not canUse(p,state.base) then notice(p,"Stand in your own pen to release a slime.");return false end
     local count=0;for _,other in pairs(state.items) do if other.inPen then count+=1 end end
     if count&gt;=CAPACITY then notice(p,"Your pen is full (6 slimes). Return one to inventory first.");return false end
     settle(p,state)
@@ -69252,31 +69294,107 @@ local function add(p,source)
     state.items[id]={source=source,weight=weight,kind=source:GetAttribute("SlimeType"),rarity=source:GetAttribute("Rarity"),progress=0}
     state.selected=state.selected or id;snapshot(p)
 end
+-- Make a plain-data snapshot before yielding to DataStore or destroying any Models.
+local function export(p,state)
+    settle(p,state)
+    local slimes={}
+    for id,r in pairs(state.items) do
+        table.insert(slimes,{id=id,kind=r.kind,weight=r.weight,progress=r.progress,inPen=r.inPen==true or r.restoreInPen==true})
+    end
+    table.sort(slimes,function(a,b) return a.id&lt;b.id end)
+    return {version=1,cash=state.cash,rebirths=state.rebirths,tokens=state.tokens,
+        upgrades={Speed=p:GetAttribute("SpeedLevel") or 0,Grabber=p:GetAttribute("GrabberLevel") or 0},
+        selected=state.selected,slimes=slimes}
+end
+local function save(p,state,release)
+    local data=export(p,state)
+    if not ProfileStore.Practice then p:SetAttribute("SaveStatus","Saving progress...") end
+    local ok,err=ProfileStore.Save(state.session,data,release)
+    if ok then
+        p:SetAttribute("SaveStatus",ProfileStore.Practice and "PRACTICE — local unpublished place; progress will not save between sessions" or "Progress saved")
+    else
+        warn("Profile save failed for "..p.UserId..": "..tostring(err))
+        p:SetAttribute("SaveStatus","Save failed — retrying; please stay connected")
+        if err=="Session ownership lost" then
+            p:SetAttribute("DataReady",false)
+            p:Kick("Your save session expired. Please rejoin to reload your progress.")
+        end
+    end
+    return ok
+end
 local function setup(p)
-    if states[p] then return end
+    if states[p] or loading[p] then return end
+    loading[p]=true
+    p:SetAttribute("DataReady",false);p:SetAttribute("SaveStatus","Loading progress...")
+    local session,err=ProfileStore.Load(p.UserId)
+    if not session then
+        loading[p]=nil
+        warn("Profile load failed for "..p.UserId..": "..tostring(err))
+        p:SetAttribute("SaveStatus","Progress could not load; existing data was not overwritten")
+        if p.Parent then p:Kick("Your progress could not load safely. Please rejoin in a moment.") end
+        return
+    end
+    if not p.Parent then ProfileStore.Save(session,session.profile,true);loading[p]=nil;return end
+    local folder=secured:WaitForChild(tostring(p.UserId),30)
+    if not folder or not p.Parent then ProfileStore.Save(session,session.profile,true);loading[p]=nil;return end
+    local data=session.profile
     local stats=p:FindFirstChild("leaderstats") or Instance.new("Folder",p);stats.Name="leaderstats"
     local cash=Instance.new("IntValue",stats);cash.Name="Cash"
-    states[p]={items={},cash=0,lastPaid=os.clock(),cashValue=cash}
-    settle(p,states[p]);claim(p)
-    task.spawn(function()
-        local folder=secured:WaitForChild(tostring(p.UserId),30)
-        if folder and states[p] then for _,source in ipairs(folder:GetChildren()) do add(p,source) end end
-    end)
+    local state={rebirths=data.rebirths,tokens=data.tokens,items={},cash=data.cash,lastPaid=os.clock(),cashValue=cash,session=session}
+    states[p]=state
+    p:SetAttribute("Rebirths",data.rebirths);p:SetAttribute("SlimeTokens",data.tokens)
+    p:SetAttribute("CashMultiplier",RebirthRules.Multiplier(data.rebirths))
+    p:SetAttribute("SpeedLevel",data.upgrades.Speed);p:SetAttribute("GrabberLevel",data.upgrades.Grabber)
+    p:SetAttribute("GrabberPower",UpgradeRules.Power(data.upgrades.Grabber))
+    for _,saved in ipairs(data.slimes) do
+        local source=SlimeFactory.Create(saved.kind,Vector3.zero)
+        source:SetAttribute("Weight",saved.weight);source:SetAttribute("InventoryId",saved.id)
+        source:SetAttribute("GrowthProgress",saved.progress);source:SetAttribute("Secured",true)
+        source.Parent=folder
+        state.items[saved.id]={source=source,kind=saved.kind,rarity=source:GetAttribute("Rarity"),
+            weight=saved.weight,progress=saved.progress,restoreInPen=saved.inPen}
+    end
+    state.selected=data.selected
+    p:SetAttribute("CollectedSlimes",#data.slimes)
+    claim(p)
+    -- Include any previously secured objects only after successful profile loading.
+    for _,source in ipairs(folder:GetChildren()) do add(p,source) end
+    settle(p,state)
+    loading[p]=nil
+    p:SetAttribute("DataReady",true)
+    p:SetAttribute("SaveStatus",ProfileStore.Practice and "PRACTICE — local unpublished place; progress will not save between sessions" or "Progress loaded — autosave enabled")
+    snapshot(p)
 end
-securedEvent.Event:Connect(add)
-Players.PlayerAdded:Connect(setup)
-for _,p in ipairs(Players:GetPlayers()) do setup(p) end
-Players.PlayerRemoving:Connect(function(p)
-    local state=states[p];if not state then return end
+local function close(p)
+    local state=states[p]
+    if not state or state.closing then return end
+    state.closing=true;p:SetAttribute("DataReady",false)
+    save(p,state,true)
     for _,r in pairs(state.items) do if r.display then r.display:Destroy() end end
     local base=state.base;states[p],lastAction[p]=nil,nil
     if base then
         owners[base]=nil;base:SetAttribute("OwnerUserId",nil);showBaseName(base,nil)
         for _,waiting in ipairs(Players:GetPlayers()) do if waiting~=p then claim(waiting) end end
     end
+end
+securedEvent.Event:Connect(add)
+Players.PlayerAdded:Connect(function(p) task.spawn(setup,p) end)
+for _,p in ipairs(Players:GetPlayers()) do task.spawn(setup,p) end
+Players.PlayerRemoving:Connect(close)
+game:BindToClose(function()
+    for p in pairs(states) do task.spawn(close,p) end
+    local deadline=os.clock()+25
+    repeat task.wait(.1) until next(states)==nil or os.clock()&gt;deadline
+end)
+task.spawn(function()
+    while task.wait(45) do
+        for p,state in pairs(states) do
+            if ready(p,state) then task.spawn(save,p,state,false) end
+        end
+    end
 end)
 remote.OnServerEvent:Connect(function(p,action,id)
-    local state=states[p];if not state then return end
+    local state=states[p];if not ready(p,state) then return end
     if os.clock()-(lastAction[p] or -math.huge)&lt;ACTION_INTERVAL then return end
     lastAction[p]=os.clock()
     if action=="Request" then settle(p,state);snapshot(p);return end
@@ -69291,6 +69409,7 @@ RunService.Heartbeat:Connect(function(dt)
     local step=elapsed;elapsed=0;local send=sendElapsed&gt;=1;if send then sendElapsed=0 end
     local now=os.clock()
     for p,state in pairs(states) do
+        if state.closing then continue end
         settle(p,state)
         for _,r in pairs(state.items) do
             if r.inPen then
@@ -69318,6 +69437,47 @@ RunService.Heartbeat:Connect(function(dt)
     end
 end)
 print("Pens ready: roaming slimes, automatic income, no collection pads.")
+
+-- Rebirth uses the same private balance as income and purchasing.
+local function rebirthStatus(player)
+    local state=states[player]
+    if not ready(player,state) then return end
+    return {count=state.rebirths,tokens=state.tokens,requirement=RebirthRules.Requirement(state.rebirths),
+        multiplier=RebirthRules.Multiplier(state.rebirths),nextMultiplier=RebirthRules.Multiplier(state.rebirths+1),
+        limit=RebirthRules.UpgradeLimit(state.rebirths),nextLimit=RebirthRules.UpgradeLimit(state.rebirths+1),
+        reward=RebirthRules.TokenReward(state.rebirths),cash=state.cash}
+end
+local status=Instance.new("BindableFunction")
+status.Name="RebirthStatus";status.OnInvoke=rebirthStatus;status.Parent=script
+local perform=Instance.new("BindableFunction")
+perform.Name="PerformRebirth"
+perform.OnInvoke=function(player)
+    local state=states[player]
+    if not ready(player,state) or state.rebirthing then return false,"Please wait." end
+    settle(player,state)
+    if state.cash&lt;RebirthRules.Requirement(state.rebirths) then return false,"Earn more cash to rebirth." end
+    local upgrades=script.Parent:FindFirstChild("Upgrades")
+    local reset=upgrades and upgrades:FindFirstChild("ResetForRebirth")
+    if not reset then return false,"Upgrades are still loading." end
+    state.rebirthing=true
+    local previous=state.rebirths
+    -- Publish the raised limit before resetting the upgrade panel.
+    player:SetAttribute("Rebirths",previous+1)
+    local ok,result=pcall(function() return reset:Invoke(player) end)
+    if not ok or not result then
+        player:SetAttribute("Rebirths",previous);state.rebirthing=false
+        return false,"Rebirth could not finish. Try again."
+    end
+    state.rebirths=previous+1
+    state.tokens+=RebirthRules.TokenReward(previous)
+    state.cash=0;state.lastPaid=os.clock()
+    player:SetAttribute("SlimeTokens",state.tokens)
+    player:SetAttribute("CashMultiplier",RebirthRules.Multiplier(state.rebirths))
+    state.rebirthing=false
+    settle(player,state);snapshot(player)
+    return true,"Rebirth complete! Slimes kept; cash and upgrades reset."
+end
+perform.Parent=script
 </ProtectedString>
       </Properties>
     </Item>
@@ -69334,7 +69494,259 @@ return Rules
 </ProtectedString>
       </Properties>
     </Item>
-    <Item class="Script" referent="RBXUpgrades1">
+    <Item class="ModuleScript" referent="RBXUpgrades1">
+      <Properties>
+        <string name="Name">SlimeCatalog</string>
+        <ProtectedString name="Source">-- Fixed appearances and rarities used by spawning and saved inventory restoration.
+local Catalog = {Types = {
+    {name="Grass",rarity="Common",color=Color3.fromRGB(110,210,80)},
+    {name="Mud",rarity="Common",color=Color3.fromRGB(135,90,60)},
+    {name="Water",rarity="Uncommon",color=Color3.fromRGB(70,175,245)},
+    {name="Honey",rarity="Rare",color=Color3.fromRGB(245,160,40)},
+    {name="Crystal",rarity="Epic",color=Color3.fromRGB(175,115,245)},
+    {name="Gold",rarity="Legendary",color=Color3.fromRGB(255,215,65)},
+}}
+function Catalog.Find(kind)
+    for _, definition in ipairs(Catalog.Types) do
+        if definition.name==kind then return definition end
+    end
+end
+return Catalog
+</ProtectedString>
+      </Properties>
+    </Item>
+    <Item class="ModuleScript" referent="RBXUpgrades2">
+      <Properties>
+        <string name="Name">SlimeFactory</string>
+        <ProtectedString name="Source">local Catalog=require(script.Parent:WaitForChild("SlimeCatalog"))
+local Factory={}
+function Factory.Create(kind,position)
+    local definition=assert(Catalog.Find(kind),"Unknown slime type")
+    local model=Instance.new("Model");model.Name=kind.."Slime"
+    model:SetAttribute("SlimeType",kind);model:SetAttribute("Rarity",definition.rarity)
+    local function ball(name,size,offset,color)
+        local p=Instance.new("Part")
+        p.Name,p.Size,p.Position,p.Color=name,size,position+offset,color
+        p.Shape,p.Material=Enum.PartType.Ball,Enum.Material.SmoothPlastic
+        p.Anchored,p.CanCollide=true,false
+        p.TopSurface,p.BottomSurface=Enum.SurfaceType.Smooth,Enum.SurfaceType.Smooth
+        p.Parent=model
+        return p
+    end
+    local body=ball("Body",Vector3.new(4,3,4),Vector3.new(0,.45,0),definition.color)
+    body.Transparency=.08;model.PrimaryPart=body
+    local black=Color3.fromRGB(20,20,25)
+    ball("LeftEye",Vector3.new(.28,.4,.22),Vector3.new(-.65,1,1.77),black)
+    ball("RightEye",Vector3.new(.28,.4,.22),Vector3.new(.65,1,1.77),black)
+    ball("Mouth",Vector3.new(.4,.18,.18),Vector3.new(0,.65,1.98),black)
+    return model
+end
+return Factory
+</ProtectedString>
+      </Properties>
+    </Item>
+    <Item class="ModuleScript" referent="RBXUpgrades3">
+      <Properties>
+        <string name="Name">ProfileSchema</string>
+        <ProtectedString name="Source">-- Only plain data goes to DataStore: no Models, Colors, CFrames, or client balances.
+local Catalog=require(script.Parent:WaitForChild("SlimeCatalog"))
+local Schema={Version=1}
+local function number(value,minimum,integer)
+    return type(value)=="number" and value==value and value&lt;math.huge
+        and value&gt;=minimum and (not integer or value%1==0)
+end
+function Schema.Default()
+    return {version=1,cash=0,rebirths=0,tokens=0,upgrades={Speed=0,Grabber=0},slimes={}}
+end
+function Schema.Validate(data)
+    if type(data)~="table" or data.version~=1 then return nil,"Unsupported profile version" end
+    if not number(data.cash,0) or not number(data.rebirths,0,true) or not number(data.tokens,0,true) then
+        return nil,"Invalid currency or rebirth count"
+    end
+    local upgrades=data.upgrades
+    if type(upgrades)~="table" or not number(upgrades.Speed,0,true) or not number(upgrades.Grabber,0,true)
+        or upgrades.Speed&gt;5+data.rebirths or upgrades.Grabber&gt;5+data.rebirths then
+        return nil,"Invalid upgrades"
+    end
+    if type(data.slimes)~="table" then return nil,"Invalid collection" end
+    local clean=Schema.Default()
+    clean.cash,clean.rebirths,clean.tokens=data.cash,data.rebirths,data.tokens
+    clean.upgrades={Speed=upgrades.Speed,Grabber=upgrades.Grabber}
+    local ids,placed,count={ },0,0
+    for key in pairs(data.slimes) do
+        if not number(key,1,true) or key&gt;#data.slimes then return nil,"Invalid collection array" end
+        count+=1
+    end
+    if count~=#data.slimes then return nil,"Sparse collection" end
+    for _,slime in ipairs(data.slimes) do
+        if type(slime)~="table" or type(slime.id)~="string" or #slime.id&lt;1 or #slime.id&gt;64 or ids[slime.id]
+            or not Catalog.Find(slime.kind) or not number(slime.weight,.000001)
+            or not number(slime.progress,0) or slime.progress&gt;1 or type(slime.inPen)~="boolean" then
+            return nil,"Invalid or duplicate slime"
+        end
+        ids[slime.id]=true
+        if slime.inPen then placed+=1 end
+        table.insert(clean.slimes,{id=slime.id,kind=slime.kind,weight=slime.weight,progress=slime.progress,inPen=slime.inPen})
+    end
+    if placed&gt;6 then return nil,"Saved pen exceeds capacity" end
+    if data.selected~=nil and (type(data.selected)~="string" or not ids[data.selected]) then return nil,"Invalid selection" end
+    clean.selected=data.selected
+    return clean
+end
+return Schema
+</ProtectedString>
+      </Properties>
+    </Item>
+    <Item class="ModuleScript" referent="RBXUpgrades4">
+      <Properties>
+        <string name="Name">ProfileStoreCore</string>
+        <ProtectedString name="Source">-- Injecting the backend lets the same save code be tested without real player data.
+local Schema=require(script.Parent:WaitForChild("ProfileSchema"))
+local HttpService=game:GetService("HttpService")
+local Core={}
+function Core.new(backend,options)
+    options=options or {}
+    local clock=options.clock or os.time
+    local pause=options.pause or task.wait
+    local token=options.token or HttpService:GenerateGUID(false)
+    local leaseSeconds=options.leaseSeconds or 180
+    local api={}
+    local function request(key,transform,userId)
+        local lastError
+        for attempt=1,3 do
+            local ok,value=pcall(function() return backend:UpdateAsync(key,transform,userId&gt;0 and {userId} or {}) end)
+            if ok then return true,value end
+            lastError=tostring(value)
+            if attempt&lt;3 then pause(attempt) end
+        end
+        return false,lastError
+    end
+    function api.Load(userId)
+        local key="Player_"..tostring(userId)
+        local ownerToken=token..":"..HttpService:GenerateGUID(false)
+        local reason
+        local ok,envelope=request(key,function(old)
+            reason=nil
+            local profile
+            if old==nil then profile=Schema.Default()
+            elseif type(old)~="table" or old.format~=1 then reason="Unsupported save format";return nil
+            else
+                local err;profile,err=Schema.Validate(old.profile)
+                if not profile then reason=err;return nil end
+                local lease=old.lease
+                if lease~=nil and (type(lease)~="table" or type(lease.token)~="string" or type(lease.expires)~="number" or lease.expires~=lease.expires or lease.expires==math.huge) then
+                    reason="Invalid session lease";return nil
+                end
+                if lease and lease.token~=ownerToken and lease.expires&gt;clock() then reason="Profile is in use by another server";return nil end
+            end
+            return {format=1,profile=profile,lease={token=ownerToken,expires=clock()+leaseSeconds}}
+        end,userId)
+        if not ok then return nil,"Load failed: "..tostring(envelope) end
+        if not envelope then return nil,reason or "Load cancelled" end
+        return {userId=userId,key=key,token=ownerToken,expires=envelope.lease.expires,profile=envelope.profile}
+    end
+    function api.Save(session,data,release)
+        if session.closed then return false,"Session already closed" end
+        local deadline=os.clock()+20
+        while session.busy and os.clock()&lt;deadline do pause(.05) end
+        if session.busy then return false,"Save still in progress" end
+        if session.closed then return false,"Session already closed" end
+        local clean,err=Schema.Validate(data)
+        if not clean then return false,err end
+        local encodedOk,encoded=pcall(function() return HttpService:JSONEncode(clean) end)
+        if not encodedOk or #encoded&gt;3900000 then return false,"Profile exceeds save size or cannot be encoded" end
+        session.busy=true
+        local reason
+        local ok,result=request(session.key,function(old)
+            reason=nil
+            if type(old)~="table" or old.format~=1 or type(old.lease)~="table"
+                or old.lease.token~=session.token or type(old.lease.expires)~="number" or old.lease.expires&lt;=clock() then
+                reason="Session ownership lost";return nil
+            end
+            return {format=1,profile=clean,lease=not release and {token=session.token,expires=clock()+leaseSeconds} or nil}
+        end,session.userId)
+        session.busy=false
+        if not ok then return false,"Save failed: "..tostring(result) end
+        if not result then return false,reason or "Save cancelled" end
+        session.profile=clean
+        session.expires=release and 0 or result.lease.expires
+        session.closed=release==true
+        return true
+    end
+    return api
+end
+return Core
+</ProtectedString>
+      </Properties>
+    </Item>
+    <Item class="ModuleScript" referent="RBXUpgrades5">
+      <Properties>
+        <string name="Name">ProfileStore</string>
+        <ProtectedString name="Source">local DataStoreService=game:GetService("DataStoreService")
+local RunService=game:GetService("RunService")
+local Core=require(script.Parent:WaitForChild("ProfileStoreCore"))
+local Store={}
+-- An unpublished local place stays playable, but never pretends to save to the cloud.
+Store.Practice=RunService:IsStudio() and game.GameId==0
+local backend
+if Store.Practice then
+    local data={}
+    backend={UpdateAsync=function(_,key,transform)
+        local updated=transform(data[key])
+        if updated~=nil then data[key]=updated end
+        return updated
+    end}
+else
+    -- Studio testing has its own namespace, separate from live profiles.
+    local name=RunService:IsStudio() and "StealASlime_Profiles_Studio_v1" or "StealASlime_Profiles_v1"
+    backend=DataStoreService:GetDataStore(name)
+end
+local core=Core.new(backend)
+function Store.Load(userId) return core.Load(userId) end
+function Store.Save(session,data,release) return core.Save(session,data,release) end
+return Store
+</ProtectedString>
+      </Properties>
+    </Item>
+    <Item class="ModuleScript" referent="RBXUpgrades6">
+      <Properties>
+        <string name="Name">RebirthRules</string>
+        <ProtectedString name="Source">-- Increasing requirements, additive multipliers, and session token rewards.
+local Rules = {}
+function Rules.Requirement(count) return 1000 * 2 ^ count end
+function Rules.Multiplier(count) return 1 + 0.5 * count end
+function Rules.TokenReward(count) return 1 end
+function Rules.UpgradeLimit(count) return 5 + count end
+return Rules
+</ProtectedString>
+      </Properties>
+    </Item>
+    <Item class="Script" referent="RBXUpgrades7">
+      <Properties>
+        <string name="Name">Rebirths</string>
+        <ProtectedString name="Source">-- Requests never supply a balance, multiplier, reward, or another player.
+local Players=game:GetService("Players")
+local RS=game:GetService("ReplicatedStorage")
+local inventory=script.Parent:WaitForChild("Inventory")
+local status=inventory:WaitForChild("RebirthStatus")
+local perform=inventory:WaitForChild("PerformRebirth")
+local remote=Instance.new("RemoteEvent",RS);remote.Name="SlimeRebirths"
+local last={}
+remote.OnServerEvent:Connect(function(player,action)
+    local now=os.clock()
+    if now-(last[player] or -math.huge)&lt;.5 then return end
+    last[player]=now
+    if action~="Request" and action~="Rebirth" then return end
+    local message
+    if action=="Rebirth" then local ok;ok,message=perform:Invoke(player) end
+    local data=status:Invoke(player)
+    if data then data.message=message;remote:FireClient(player,data) end
+end)
+Players.PlayerRemoving:Connect(function(player) last[player]=nil end)
+</ProtectedString>
+      </Properties>
+    </Item>
+    <Item class="Script" referent="RBXUpgrades8">
       <Properties>
         <string name="Name">Upgrades</string>
         <ProtectedString name="Source">-- ServerScriptService &gt; Upgrades. Prices and balances never come from the client.
@@ -69355,29 +69767,31 @@ local function snapshot(player, message)
     local state = levels[player]
     if not state then return end
     remote:FireClient(player, {
-        speedLevel = state.Speed, grabberLevel = state.Grabber, maxLevel = Rules.MaxLevel,
-        speedCost = Rules.Cost("Speed", state.Speed), grabberCost = Rules.Cost("Grabber", state.Grabber),
+        speedLevel = state.Speed, grabberLevel = state.Grabber, maxLevel = 5 + (player:GetAttribute("Rebirths") or 0),
+        speedCost = Rules.Cost("Speed", state.Speed, 5 + (player:GetAttribute("Rebirths") or 0)), grabberCost = Rules.Cost("Grabber", state.Grabber, 5 + (player:GetAttribute("Rebirths") or 0)),
         speed = Rules.Speed(state.Speed), power = Rules.Power(state.Grabber),
         holdSeconds = Rules.HoldSeconds(state.Grabber), message = message,
     })
 end
 local function setup(player)
     if levels[player] then return end
-    levels[player] = {Speed = 0, Grabber = 0}
+    while player.Parent and player:GetAttribute("DataReady")~=true do task.wait(.1) end
+    if not player.Parent then return end
+    levels[player] = {Speed = player:GetAttribute("SpeedLevel") or 0, Grabber = player:GetAttribute("GrabberLevel") or 0}
     publish(player)
 end
-Players.PlayerAdded:Connect(setup)
+Players.PlayerAdded:Connect(function(player) task.spawn(setup,player) end)
 Players.PlayerRemoving:Connect(function(player) levels[player], lastAction[player] = nil, nil end)
-for _, player in ipairs(Players:GetPlayers()) do setup(player) end
+for _, player in ipairs(Players:GetPlayers()) do task.spawn(setup,player) end
 remote.OnServerEvent:Connect(function(player, action, kind)
-    if not levels[player] then return end
+    if not levels[player] or player:GetAttribute("DataReady")~=true then return end
     local now = os.clock()
     if now - (lastAction[player] or -math.huge) &lt; 0.2 then return end
     lastAction[player] = now
     if action == "Request" then snapshot(player); return end
     if action ~= "Buy" or (kind ~= "Speed" and kind ~= "Grabber") then return end
     local state = levels[player]
-    local cost = Rules.Cost(kind, state[kind])
+    local cost = Rules.Cost(kind, state[kind], 5 + (player:GetAttribute("Rebirths") or 0))
     if not cost then snapshot(player, "Maximum level reached for now."); return end
     -- Inventory owns the private cash balance and subtracts the exact server price.
     if not spend:Invoke(player, cost) then snapshot(player, "Not enough cash. Release slimes into your pen to earn more."); return end
@@ -69385,17 +69799,29 @@ remote.OnServerEvent:Connect(function(player, action, kind)
     publish(player)
     snapshot(player, (kind == "Speed" and "Speed" or "Grabber Power") .. " upgraded!")
 end)
-print("Upgrades ready: Speed and Grabber Power, five levels each, session-only.")
+print("Upgrades ready: Speed and Grabber Power, levels restored from profile.")
+
+local reset = Instance.new("BindableFunction")
+reset.Name = "ResetForRebirth"
+reset.OnInvoke = function(player)
+    if not levels[player] then return false end
+    levels[player] = {Speed=0, Grabber=0}
+    lastAction[player] = os.clock()
+    publish(player)
+    snapshot(player, "Rebirth complete! Upgrade levels reset; limits increased.")
+    return true
+end
+reset.Parent = script
 </ProtectedString>
       </Properties>
     </Item>
-    <Item class="ModuleScript" referent="RBXUpgrades2">
+    <Item class="ModuleScript" referent="RBXUpgrades9">
       <Properties>
         <string name="Name">UpgradeRules</string>
         <ProtectedString name="Source">-- Server-only balance settings. Rebirths can raise these limits in a later feature.
 local Rules = {MaxLevel = 5}
-function Rules.Cost(kind, level)
-    if (kind ~= "Speed" and kind ~= "Grabber") or level &lt; 0 or level &gt;= Rules.MaxLevel then return nil end
+function Rules.Cost(kind, level, maxLevel)
+    if (kind ~= "Speed" and kind ~= "Grabber") or level &lt; 0 or level &gt;= (maxLevel or Rules.MaxLevel) then return nil end
     return (kind == "Speed" and 25 or 35) * 2 ^ level
 end
 function Rules.Speed(level) return 16 + 2 * level end
@@ -69409,7 +69835,7 @@ return Rules
 </ProtectedString>
       </Properties>
     </Item>
-    <Item class="Script" referent="RBXUpgrades4">
+    <Item class="Script" referent="RBXUpgrades13">
       <Properties>
         <string name="Name">UpgradeIntegration</string>
         <ProtectedString name="Source">-- Isolated two-client upgrade checks; test controls never ship in the clean place.

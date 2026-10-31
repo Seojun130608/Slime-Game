@@ -77,8 +77,8 @@ Luau
 - [x] Inventory and growth: Secured babies stay in inventory until released into their pen. Hover to see weight; placed slimes grow and roam inside the fences.
 - [x] Income: Slimes in the pen automatically generate cash based on their type and weight; stored slimes earn nothing.
 - [x] Two upgrades: Purchase Speed and Grabber Power with earned cash. Each has five levels; Grabber Power unlocks heavier babies, shortens pulls, and reduces carrying slowdown.
-- Rebirths: Reset cash and upgrades while keeping slimes. Cash multipliers progress through 1.5×, 2×, 2.5×, and beyond.
-- Saving: Collections, cash, upgrades, and rebirth progress save between sessions.
+- [x] Rebirths: Reset cash and upgrades while keeping slimes and growth. Cash multipliers progress through 1.5×, 2×, 2.5×, and beyond; each rebirth raises upgrade limits and awards one Slime Token.
+- [ ] Saving: Local implementation and 37 isolated tests complete for collections, growth/placement, cash, upgrades, rebirths, and tokens. Real cloud save/rejoin verification is pending; unpublished local Play remains practice mode.
 
 ## 9. Features Not Included Yet
 
@@ -90,7 +90,7 @@ New areas: Caves, candy valleys, volcanoes, floating islands, and cosmic zones.
 Mystery Slimes: Capture slimes whose types stay hidden until brought home.
 Mystery glow effects: White glows signal exceptionally rare Mystery Slimes.
 Robux shop: Premium Mystery Slimes with random sizes, guaranteed Epic-or-better rewards, and disclosed odds.
-Slime Tokens: Earn tokens through rebirths and spend them on permanent rewards.
+Slime Token spending: Use earned rebirth tokens for extra slots and cosmetics.
 Extra base slots: Unlock more spaces for income-producing slimes.
 Cosmetics: Collect bat skins, grabber effects, and base decorations.
 

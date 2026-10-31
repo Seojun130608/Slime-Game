@@ -1,7 +1,7 @@
 -- Server-only balance settings. Rebirths can raise these limits in a later feature.
 local Rules = {MaxLevel = 5}
-function Rules.Cost(kind, level)
-    if (kind ~= "Speed" and kind ~= "Grabber") or level < 0 or level >= Rules.MaxLevel then return nil end
+function Rules.Cost(kind, level, maxLevel)
+    if (kind ~= "Speed" and kind ~= "Grabber") or level < 0 or level >= (maxLevel or Rules.MaxLevel) then return nil end
     return (kind == "Speed" and 25 or 35) * 2 ^ level
 end
 function Rules.Speed(level) return 16 + 2 * level end

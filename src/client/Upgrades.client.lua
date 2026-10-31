@@ -43,7 +43,7 @@ local speed = label(panel, "Speed", 82, 42, "Loading...", 17)
 local speedBuy = button(panel, "BuySpeed", 128, "Loading...")
 local power = label(panel, "Grabber", 184, 48, "Loading...", 16)
 local powerBuy = button(panel, "BuyGrabber", 237, "Loading...")
-local notice = label(panel, "Notice", 287, 48, "Upgrades last this session. Saving comes later.", 14)
+local notice = label(panel, "Notice", 287, 48, "Progress saves when cloud saving is available; check the save status.", 14)
 local close = button(panel, "Close", 345, "CLOSE")
 local function update()
     local balance = player:GetAttribute("Cash") or 0
