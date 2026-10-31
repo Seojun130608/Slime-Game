@@ -1,0 +1,1328 @@
+<?xml version='1.0' encoding='utf-8'?>
+<roblox version="4">
+  <External>null</External>
+  <External>nil</External>
+  <Item class="Workspace" referent="RBX1">
+    <Properties>
+      <string name="Name">Workspace</string>
+    </Properties>
+    <Item class="SpawnLocation" referent="RBX2">
+      <Properties>
+        <string name="Name">SpawnLocation</string>
+        <bool name="Anchored">true</bool>
+        <bool name="Neutral">true</bool>
+        <bool name="CanCollide">false</bool>
+        <float name="Transparency">1</float>
+        <float name="Duration">0</float>
+        <Vector3 name="size">
+          <X>10</X>
+          <Y>1</Y>
+          <Z>10</Z>
+        </Vector3>
+        <Vector3 name="Position">
+          <X>0</X>
+          <Y>0.6</Y>
+          <Z>229</Z>
+        </Vector3>
+      </Properties>
+    </Item>
+  </Item>
+  <Item class="Lighting" referent="RBX3">
+    <Properties>
+      <string name="Name">Lighting</string>
+      <float name="ClockTime">13</float>
+      <float name="Brightness">2</float>
+      <float name="FogEnd">3000</float>
+      <bool name="GlobalShadows">false</bool>
+    </Properties>
+  </Item>
+  <Item class="ServerScriptService" referent="RBX4">
+    <Properties>
+      <string name="Name">ServerScriptService</string>
+    </Properties>
+    <Item class="Script" referent="RBX5">
+      <Properties>
+        <string name="Name">Grassland</string>
+        <ProtectedString name="Source">-- Roblox Luau: ServerScriptService &gt; Grassland.
+-- Six fenced grass pens. Slime placement, income, and safe-zone protection come later.
+if workspace:FindFirstChild("SlimeMap") then return end
+local map = Instance.new("Model")
+map.Name = "SlimeMap"
+local V = Vector3.new
+local C = Color3.fromRGB
+local palette = {
+    grass = C(102, 180, 72), stone = C(130, 166, 100), trim = C(230, 207, 162),
+    dark = C(78, 100, 53), wood = C(157, 111, 65), path = C(112, 187, 79),
+}
+
+-- One helper handles every anchored building block.
+local function part(name, size, position, color, parent, material)
+    local p = Instance.new("Part")
+    p.Name, p.Size, p.Position = name, size, position
+    p.Color = color
+    p.Anchored = true
+    p.Material = material or Enum.Material.SmoothPlastic
+    p.TopSurface, p.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
+    p.Parent = parent
+    return p
+end
+local function model(name, parent)
+    local m = Instance.new("Model")
+    m.Name, m.Parent = name, parent
+    return m
+end
+local function sign(text, size, position, color, parent)
+    local board = part("Sign", size, position, color, parent)
+    local gui = Instance.new("SurfaceGui")
+    gui.Face = Enum.NormalId.Back -- Visible while walking north from the plaza.
+    gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+    gui.PixelsPerStud = 35
+    gui.Parent = board
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.fromScale(1, 1)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = palette.trim
+    label.Font = Enum.Font.GothamBold
+    label.TextScaled = true
+    label.Parent = gui
+    return board
+end
+local function cylinder(name, radius, height, position, color, parent)
+    local p = part(name, V(height, radius * 2, radius * 2), position, color, parent)
+    p.Shape = Enum.PartType.Cylinder
+    p.CFrame = CFrame.new(position) * CFrame.Angles(0, 0, math.rad(90))
+    return p
+end
+-- 1. A narrow corridor joins the wider ranch plaza.
+-- Separate floors remove the unused strips outside the tunnel walls.
+part("Grassland", V(102, 2, 610), V(0, -1, -180), palette.grass, map, Enum.Material.Grass)
+part("PlazaGround", V(192, 2, 130), V(0, -1, 190), palette.grass, map, Enum.Material.Grass)
+local walls = model("BoundaryWalls", map)
+for _, x in ipairs({-96, 96}) do
+    part("EdgeWall", V(4, 40, 130), V(x, 20, 190), palette.stone, walls)
+    part("WallCap", V(5, 1, 130), V(x, 40.5, 190), palette.trim, walls)
+    for z = 135, 255, 40 do
+        part("Buttress", V(6, 42, 6), V(x, 21, z), palette.dark, walls)
+    end
+end
+-- Shoulders close the sides where the plaza meets the corridor.
+for _, x in ipairs({-73, 73}) do
+    part("PlazaShoulder", V(46, 40, 3), V(x, 20, 125), palette.stone, walls)
+    part("ShoulderCap", V(46, 1, 4), V(x, 40.5, 125), palette.trim, walls)
+end
+part("NorthEndWall", V(102, 40, 4), V(0, 20, -485), palette.stone, walls)
+part("NorthEndCap", V(102, 1, 5), V(0, 40.5, -485), palette.trim, walls)
+part("SouthEndWall", V(192, 40, 4), V(0, 20, 255), palette.stone, walls)
+part("SouthEndCap", V(192, 1, 5), V(0, 40.5, 255), palette.trim, walls)
+
+-- 2. An open-air corridor with tall walls and wall-mounted lights.
+part("Plaza", V(172, 0.2, 122), V(0, 0.1, 190), palette.path, map, Enum.Material.Grass)
+local tunnel = model("NurseryTunnel", map)
+part("MainPath", V(22, 0.18, 616), V(0, 0.09, -175), palette.path, tunnel, Enum.Material.Grass)
+for _, x in ipairs({-12, 12}) do
+    part("PathEdging", V(1, 0.24, 616), V(x, 0.12, -175), C(78, 150, 59), tunnel, Enum.Material.Grass)
+end
+for _, x in ipairs({-49, 49}) do
+    part("TunnelWall", V(3, 40, 604), V(x, 20, -177), palette.stone, tunnel)
+    part("WallBase", V(4, 2, 604), V(x, 1, -177), palette.dark, tunnel)
+    part("CorridorWallCap", V(4, 1, 604), V(x, 40.5, -177), palette.trim, tunnel)
+end
+for z = -450, 100, 55 do
+    for _, x in ipairs({-47, 47}) do
+        part("WallColumn", V(4, 42, 5), V(x, 21, z), palette.dark, tunnel)
+        part("ColumnFoot", V(6, 2, 7), V(x, 1, z), palette.trim, tunnel)
+    end
+    for _, x in ipairs({-45, 45}) do
+        local lamp = part("WallLight", V(0.5, 3, 2), V(x, 12, z), C(255, 235, 170), tunnel, Enum.Material.Neon)
+        local light = Instance.new("PointLight")
+        light.Color, light.Brightness, light.Range = C(255, 235, 190), 0.65, 28
+        light.Parent = lamp
+    end
+end
+-- Collection replaces the old overhead entrance sign.
+local collectZone = model("CollectZone", map)
+local pad = part("CollectionPad", V(95, 0.15, 4), V(0, 0.32, 126), C(158, 219, 166), collectZone)
+for _, z in ipairs({124.125, 127.875}) do
+    part("CollectionBorder", V(95, 0.2, 0.25), V(0, 0.45, z), C(205, 255, 211), collectZone, Enum.Material.Neon)
+end
+for _, x in ipairs({-47.375, 47.375}) do
+    part("CollectionBorder", V(0.25, 0.2, 4), V(x, 0.45, 126), C(205, 255, 211), collectZone, Enum.Material.Neon)
+end
+local floorGui = Instance.new("SurfaceGui")
+floorGui.Face, floorGui.SizingMode = Enum.NormalId.Top, Enum.SurfaceGuiSizingMode.PixelsPerStud
+floorGui.PixelsPerStud, floorGui.Parent = 30, pad
+local floorLabel = Instance.new("TextLabel")
+floorLabel.Size = UDim2.fromScale(1, 1)
+floorLabel.BackgroundTransparency = 1
+floorLabel.Text, floorLabel.TextColor3 = "COLLECT ZONE", C(37, 81, 51)
+floorLabel.Font, floorLabel.TextScaled = Enum.Font.GothamBold, true
+floorLabel.Parent = floorGui
+-- An invisible volume detects the player's position, not the carried body's.
+local trigger = part("CollectionTrigger", V(95, 12, 4), V(0, 6, 126), C(255, 255, 255), collectZone)
+trigger.Transparency, trigger.CanCollide, trigger.CanTouch, trigger.CanQuery = 1, false, false, false
+sign("STEAL A SLIME", V(48, 7, 1), V(0, 16, 248), palette.dark, map)
+
+-- 3. Six open grass pens: three on either side of the center lane.
+local bases = model("Bases", map)
+local fenceColor = C(175, 126, 74)
+local railColor = C(202, 157, 99)
+local function fenceRail(position, size, parent)
+    for _, height in ipairs({1.4, 3}) do
+        part("FenceRail", size, position + V(0, height, 0), railColor, parent, Enum.Material.Wood)
+    end
+end
+local function fencePost(position, parent)
+    part("FencePost", V(1.2, 4.3, 1.2), position + V(0, 2.15, 0), fenceColor, parent, Enum.Material.Wood)
+    part("PostCap", V(1.5, 0.3, 1.5), position + V(0, 4.45, 0), palette.trim, parent, Enum.Material.Wood)
+end
+for row, z in ipairs({156, 194, 232}) do
+    for sideIndex, side in ipairs({-1, 1}) do
+        local index = (row - 1) * 2 + sideIndex
+        local x = side * 55
+        local base = model("Base" .. index, bases)
+        base:SetAttribute("BaseIndex", index)
+        base:SetAttribute("EntrancePosition", V(side * 22, 0, z))
+        part("PenGrass", V(66, 0.12, 30), V(x, 0.06, z), C(117, 192, 83), base, Enum.Material.Grass)
+        -- Long fences at the north and south edges of each pen.
+        for _, dz in ipairs({-15, 15}) do
+            fenceRail(V(x, 0, z + dz), V(66, 0.45, 0.6), base)
+            for dx = -33, 33, 11 do
+                fencePost(V(x + dx, 0, z + dz), base)
+            end
+        end
+        -- Back fence and two short front sections leave a 12-stud entrance.
+        local backX, frontX = side * 88, side * 22
+        fenceRail(V(backX, 0, z), V(0.6, 0.45, 30), base)
+        fencePost(V(backX, 0, z), base)
+        for _, dz in ipairs({-10.5, 10.5}) do
+            fenceRail(V(frontX, 0, z + dz), V(0.6, 0.45, 9), base)
+        end
+        fencePost(V(frontX, 0, z - 6), base)
+        fencePost(V(frontX, 0, z + 6), base)
+        local board = sign("BASE 0" .. index, V(8, 2.2, 0.5), V(frontX, 4, z - 10.5), palette.wood, base)
+        board.CFrame = CFrame.new(board.Position) * CFrame.Angles(0, -side * math.pi / 2, 0)
+        -- These are reserved spots; placement and income are later features.
+        local spots = model("CollectionSpots", base)
+        for column, dx in ipairs({-20, 0, 20}) do
+            for spotRow, dz in ipairs({-7, 7}) do
+                local spotIndex = (column - 1) * 2 + spotRow
+                local spot = model("Spot" .. spotIndex, spots)
+                spot:SetAttribute("SlotIndex", spotIndex)
+                spot:SetAttribute("Occupied", false)
+                cylinder("SpotBorder", 3.5, 0.14, V(x + dx, 0.2, z + dz), C(237, 225, 178), spot)
+                cylinder("CollectionSpot", 2.9, 0.1, V(x + dx, 0.32, z + dz), C(155, 213, 110), spot)
+            end
+        end
+    end
+end
+
+-- 4. Nursery bays leave the center lane clear.
+local nests = model("Nests", map)
+local nurseryPositions = {V(-27, 0, 45), V(27, 0, -65), V(-27, 0, -175), V(27, 0, -285), V(-27, 0, -395)}
+local nurseryColors = {C(157, 196, 104), C(114, 184, 196), C(172, 150, 207), C(226, 183, 102), C(214, 137, 131)}
+for index, center in ipairs(nurseryPositions) do
+    local nest = model("Nest" .. index, nests)
+    nest:SetAttribute("SpawnCenter", center + V(0, 0.7, 0))
+    nest:SetAttribute("Zone", index)
+    local accent = nurseryColors[index]
+    sign("ZONE 0" .. index, V(22, 3, 0.6), V(-35, 12, center.Z + 35), palette.dark, tunnel)
+    part("ZoneSignPost", V(1, 12, 1), V(-35, 6, center.Z + 35), accent, tunnel)
+    cylinder("StonePlinth", 15, 0.5, center + V(0, 0.25, 0), palette.trim, nest)
+    cylinder("SoftBed", 12, 0.2, center + V(0, 0.6, 0), accent, nest)
+    for segment = 0, 31 do
+        local angle = segment * math.pi * 2 / 32
+        local position = center + V(math.cos(angle) * 13, 0.9, math.sin(angle) * 13)
+        local rim = part("NestRim", V(2.8, 0.8, 2.8), position, palette.wood, nest)
+        rim.CFrame = CFrame.new(position) * CFrame.Angles(0, -angle, 0)
+    end
+    for _, dx in ipairs({-11, 11}) do
+        part("CanopyPost", V(1, 9, 1), center + V(dx, 4.5, -9), palette.wood, nest)
+    end
+    part("Canopy", V(28, 1, 8), center + V(0, 9, -10), accent, nest)
+    sign("NURSERY 0" .. index, V(22, 2.5, 0.5), center + V(0, 7, -8), palette.dark, nest)
+    -- A short side path connects each bay to the main walkway.
+    part("NurseryApproach", V(12, 0.15, 7), V(center.X / 2, 0.075, center.Z), palette.path, tunnel, Enum.Material.Grass)
+end
+
+-- The existing spawn is reused so a second spawn is never created.
+local spawn = workspace:FindFirstChildWhichIsA("SpawnLocation")
+if spawn then
+    spawn.CFrame = CFrame.new(0, 0.6, 229)
+    spawn.Size = V(10, 1, 10)
+    spawn.Transparency = 1
+    spawn.CanCollide = false
+    spawn.Neutral = true
+    for _, decoration in ipairs(spawn:GetChildren()) do
+        if decoration:IsA("Decal") or decoration:IsA("Texture") then
+            decoration.Transparency = 1
+        end
+    end
+end
+map:SetAttribute("MapVersion", "SixGrassPens")
+map.Parent = workspace
+</ProtectedString>
+      </Properties>
+    </Item>
+    <Item class="Script" referent="RBX6">
+      <Properties>
+        <string name="Name">Slimes</string>
+        <ProtectedString name="Source">-- Put this Script in ServerScriptService alongside Grassland.
+-- Piece 1: one table stores the appearance and fixed rarity of each type.
+local types = {
+    {name = "Grass", rarity = "Common", color = Color3.fromRGB(110, 210, 80)},
+    {name = "Mud", rarity = "Common", color = Color3.fromRGB(135, 90, 60)},
+    {name = "Water", rarity = "Uncommon", color = Color3.fromRGB(70, 175, 245)},
+    {name = "Honey", rarity = "Rare", color = Color3.fromRGB(245, 160, 40)},
+    {name = "Crystal", rarity = "Epic", color = Color3.fromRGB(175, 115, 245)},
+    {name = "Gold", rarity = "Legendary", color = Color3.fromRGB(255, 215, 65)},
+}
+
+-- Piece 2: a helper creates one anchored, rounded part.
+local function ball(name, size, position, color, parent)
+    local part = Instance.new("Part")
+    part.Name = name
+    part.Shape = Enum.PartType.Ball
+    part.Size = size
+    part.Position = position
+    part.Color = color
+    part.Material = Enum.Material.SmoothPlastic
+    part.Anchored = true
+    part.CanCollide = false
+    part.TopSurface = Enum.SurfaceType.Smooth
+    part.BottomSurface = Enum.SurfaceType.Smooth
+    part.Parent = parent
+    return part
+end
+
+-- Piece 3: wait until Grassland has finished creating the nests.
+local map = workspace:WaitForChild("SlimeMap")
+local nests = map:WaitForChild("Nests")
+if map:FindFirstChild("WildSlimes") then return end
+local slimes = Instance.new("Folder")
+slimes.Name = "WildSlimes"
+slimes.Parent = map
+
+for index, slimeType in ipairs(types) do
+    -- Two types per nest: indices 1/2, 3/4, and 5/6.
+    local nestIndex = math.ceil(index / 2)
+    local nest = nests:WaitForChild("Nest" .. nestIndex)
+    local center = nest:GetAttribute("SpawnCenter") or nest:GetBoundingBox().Position
+    local side = index % 2 == 1 and -4 or 4
+    local position = Vector3.new(center.X + side, center.Y, center.Z)
+
+    local slime = Instance.new("Model")
+    slime.Name = slimeType.name .. "Slime"
+    slime:SetAttribute("SlimeType", slimeType.name)
+    slime:SetAttribute("Rarity", slimeType.rarity)
+    slime:SetAttribute("NestIndex", nestIndex)
+    slime.Parent = slimes
+
+    -- The bottom is hidden beneath the ground for a flat-bottomed dome.
+    local body = ball("Body", Vector3.new(4, 3, 4), position + Vector3.new(0, 0.45, 0), slimeType.color, slime)
+    body.Transparency = 0.08
+    slime.PrimaryPart = body
+    local black = Color3.fromRGB(20, 20, 25)
+    ball("LeftEye", Vector3.new(0.28, 0.4, 0.22), position + Vector3.new(-0.65, 1, 1.77), black, slime)
+    ball("RightEye", Vector3.new(0.28, 0.4, 0.22), position + Vector3.new(0.65, 1, 1.77), black, slime)
+    ball("Mouth", Vector3.new(0.4, 0.18, 0.18), position + Vector3.new(0, 0.65, 1.98), black, slime)
+end
+print("Slimes ready: Grass, Mud, Water, Honey, Crystal, Gold")
+</ProtectedString>
+      </Properties>
+    </Item>
+    <Item class="ModuleScript" referent="RBX7">
+      <Properties>
+        <string name="Name">CombatRules</string>
+        <ProtectedString name="Source">-- ModuleScript in ServerScriptService. Shared by capture and bat validation.
+local Rules = {
+    SwingCooldown = 0.9,
+    HitProtection = 2,
+    StunDuration = 0.55,
+    Range = 8,
+    Knockback = 34,
+    DropLifetime = 30,
+}
+local map = workspace:WaitForChild("SlimeMap")
+local trigger = map:WaitForChild("CollectZone"):WaitForChild("CollectionTrigger")
+Rules.SafeZ = trigger.Position.Z - trigger.Size.Z / 2
+function Rules.IsSafe(character)
+    local root = character and character:FindFirstChild("HumanoidRootPart")
+    return root ~= nil and root.Position.Z &gt;= Rules.SafeZ
+end
+function Rules.IsStunned(player)
+    return (player:GetAttribute("BatStunnedUntil") or 0) &gt; workspace:GetServerTimeNow()
+end
+return Rules
+</ProtectedString>
+      </Properties>
+    </Item>
+    <Item class="Script" referent="RBX8">
+      <Properties>
+        <string name="Name">Capture</string>
+        <ProtectedString name="Source">-- Roblox Luau: ServerScriptService &gt; Capture.
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local StarterPack = game:GetService("StarterPack")
+local ServerStorage = game:GetService("ServerStorage")
+local CombatRules = require(script.Parent:WaitForChild("CombatRules"))
+local secured = Instance.new("Folder")
+secured.Name, secured.Parent = "SecuredSlimes", ServerStorage
+local collectionTrigger
+local HOLD_SECONDS, REACH = 2, 10
+local random = Random.new()
+local states, attempts, carrying, messageVersions = {}, {}, {}, {}
+
+-- PIECE 1: build the grabber and give each player clear instructions.
+local function piece(name, size, color, parent)
+    local p = Instance.new("Part")
+    p.Name, p.Size, p.Color = name, size, color
+    p.Material = Enum.Material.SmoothPlastic
+    p.CanCollide, p.Massless = false, true
+    p.Parent = parent
+    return p
+end
+local tool = Instance.new("Tool")
+tool.Name, tool.CanBeDropped = "Slime Grabber", false
+local handle = piece("Handle", Vector3.new(1, 1, 2), Color3.fromRGB(65, 106, 94), tool)
+local nozzle = piece("Nozzle", Vector3.new(1.4, 1.4, 0.6), Color3.fromRGB(190, 240, 205), tool)
+nozzle.CFrame = handle.CFrame * CFrame.new(0, 0, -1.2)
+local joint = Instance.new("WeldConstraint")
+joint.Part0, joint.Part1, joint.Parent = handle, nozzle, handle
+local tip = Instance.new("Attachment")
+tip.Name, tip.Position, tip.Parent = "TetherTip", Vector3.new(0, 0, -1.6), handle
+tool.Parent = StarterPack
+
+local function hint(player, text)
+    local gui = player:FindFirstChild("PlayerGui")
+    gui = gui and gui:FindFirstChild("CaptureHint")
+    if gui then gui.Message.Text = text end
+end
+local function defaultHint(player)
+    if carrying[player] then
+        if player:GetAttribute("ChasedBy") then
+            return "GIANT PARENT CHASING! Reach the green COLLECT ZONE!  |  Q: drop baby"
+        end
+        return "Carry this baby to the green COLLECT ZONE to secure it.  |  Q: drop baby"
+    end
+    return "Collected: " .. (player:GetAttribute("CollectedSlimes") or 0) .. "  |  Equip Slime Grabber [1] and hold E near a baby"
+end
+local function message(player, text)
+    local version = (messageVersions[player] or 0) + 1
+    messageVersions[player] = version
+    hint(player, text)
+    task.delay(4, function()
+        if player.Parent and messageVersions[player] == version then
+            hint(player, defaultHint(player))
+        end
+    end)
+end
+local function setupCharacter(player, character)
+    local backpack = player:WaitForChild("Backpack")
+    if not backpack:FindFirstChild(tool.Name) and not character:FindFirstChild(tool.Name) then
+        tool:Clone().Parent = backpack
+    end
+    local playerGui = player:WaitForChild("PlayerGui")
+    if not playerGui:FindFirstChild("CaptureHint") then
+        local gui = Instance.new("ScreenGui")
+        gui.Name, gui.ResetOnSpawn = "CaptureHint", false
+        local label = Instance.new("TextLabel")
+        label.Name = "Message"
+        label.AnchorPoint = Vector2.new(0.5, 1)
+        label.Position, label.Size = UDim2.new(0.5, 0, 1, -85), UDim2.new(0.8, 0, 0, 54)
+        label.BackgroundColor3 = Color3.fromRGB(35, 55, 46)
+        label.BackgroundTransparency = 0.15
+        label.TextColor3 = Color3.fromRGB(245, 240, 220)
+        label.Font, label.TextSize, label.TextWrapped = Enum.Font.GothamMedium, 17, true
+        label.Parent, gui.Parent = gui, playerGui
+    end
+    hint(player, defaultHint(player))
+end
+
+-- PIECE 2: the server checks equipment, range, timing, power, and ownership.
+-- Weights live only in this server table, never as visible model attributes.
+local function power(player)
+    local value = player:GetAttribute("GrabberPower")
+    if type(value) ~= "number" or value ~= value then return 10 end
+    return math.clamp(value, 0, 1000000)
+end
+local function eligible(player, state)
+    local character = player.Character
+    local root = character and character:FindFirstChild("HumanoidRootPart")
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    local equipped = character and character:FindFirstChild("Slime Grabber")
+    if not root or not humanoid or humanoid.Health &lt;= 0 then return false end
+    if not equipped or not equipped:IsA("Tool") then return false end
+    if CombatRules.IsStunned(player) then return false end
+    if carrying[player] or state.slime:GetAttribute("Captured") then return false end
+    if state.owner and state.owner ~= player then return false end
+    if not state.slime.PrimaryPart or not state.slime:IsDescendantOf(workspace) then return false end
+    if (root.Position - state.slime.PrimaryPart.Position).Magnitude &gt; REACH then return false end
+    local params = RaycastParams.new()
+    params.FilterType = Enum.RaycastFilterType.Exclude
+    -- Avatars and cosmetic accessories must not block collecting a nearby baby.
+    local exclusions = {state.slime}
+    for _, other in ipairs(Players:GetPlayers()) do
+        if other.Character then table.insert(exclusions, other.Character) end
+    end
+    params.FilterDescendantsInstances = exclusions
+    local origin = root.Position + Vector3.new(0, 1, 0)
+    if workspace:Raycast(origin, state.slime.PrimaryPart.Position - origin, params) then return false end
+    return true, root, humanoid, equipped
+end
+local function cancel(player)
+    local state = attempts[player]
+    if not state then return end
+    attempts[player] = nil
+    state.owner, state.started, state.released = nil, nil, nil
+    if state.beam then state.beam:Destroy(); state.beam = nil end
+end
+local function begin(player, state)
+    if not eligible(player, state) then
+        message(player, "Equip your grabber, move closer, and carry only one baby at a time.")
+        return
+    end
+    cancel(player)
+    state.weight = state.weight or random:NextInteger(1, 20)
+    if state.weight &gt; power(player) then
+        message(player, "This baby needs more Grabber Power. Try another slime.")
+        return
+    end
+    local _, _, _, equipped = eligible(player, state)
+    state.owner, state.started, state.released = player, os.clock(), nil
+    attempts[player] = state
+    local beam = Instance.new("Beam")
+    beam.Attachment0 = equipped.Handle.TetherTip
+    beam.Attachment1 = state.attachment
+    beam.Width0, beam.Width1, beam.FaceCamera = 0.15, 0.1, true
+    beam.Color = ColorSequence.new(Color3.fromRGB(190, 245, 205))
+    beam.Parent, state.beam = state.slime.PrimaryPart, beam
+    message(player, "Keep holding E to pull this baby free...")
+end
+
+-- PIECE 3: weld a successful capture to the character and apply slowdown.
+-- Future chase code can listen to this server-only event.
+local captured = Instance.new("BindableEvent")
+captured.Name, captured.Parent = "SlimeCaptured", script
+local released = Instance.new("BindableEvent")
+released.Name, released.Parent = "SlimeReleased", script
+local function release(player, dropFrame)
+    cancel(player)
+    local record = carrying[player]
+    if not record then return end
+    carrying[player] = nil
+    for _, weld in ipairs(record.welds) do weld:Destroy() end
+    for _, p in ipairs(record.state.slime:GetDescendants()) do
+        if p:IsA("BasePart") then p.Anchored = true end
+    end
+    local state = record.state
+    state.dropVersion = (state.dropVersion or 0) + 1
+    state.dropped = dropFrame ~= nil
+    state.dropExpires = state.dropped and (os.clock() + CombatRules.DropLifetime) or nil
+    state.prompt.HoldDuration = state.dropped and 0 or HOLD_SECONDS
+    state.prompt.ActionText = state.dropped and "Pick up dropped baby" or "Pull with grabber"
+    record.state.slime:PivotTo(dropFrame or record.state.home)
+    record.state.slime:SetAttribute("Captured", false)
+    record.state.slime:SetAttribute("CarrierUserId", nil)
+    record.state.prompt.Enabled = true
+    if record.humanoid.Parent then record.humanoid.WalkSpeed = record.speed end
+    player:SetAttribute("CarryingSlime", nil)
+    released:Fire(player, record.state.slime)
+end
+local caught = Instance.new("BindableEvent")
+caught.Name, caught.Parent = "ParentCaught", script
+caught.Event:Connect(function(player, slime)
+    local record = carrying[player]
+    if record and record.state.slime == slime then
+        release(player)
+        message(player, "The parent caught you! The baby returned to its nursery.")
+    end
+end)
+local function finish(player, state)
+    if state.dropped then
+        if state.dropExpires and os.clock() &gt;= state.dropExpires then return end
+    else
+        if attempts[player] ~= state or state.owner ~= player then return end
+        local elapsed = (state.released or os.clock()) - state.started
+        if elapsed &lt; HOLD_SECONDS - 0.1 then cancel(player); return end
+    end
+    local valid, root, humanoid = eligible(player, state)
+
+    if not valid or state.weight &gt; power(player) then cancel(player); return end
+    cancel(player)
+    local slime, body = state.slime, state.slime.PrimaryPart
+    state.dropped, state.dropExpires = false, nil
+    state.dropVersion = (state.dropVersion or 0) + 1
+    state.prompt.HoldDuration, state.prompt.ActionText = HOLD_SECONDS, "Pull with grabber"
+    state.prompt.Enabled = false
+    slime:SetAttribute("Captured", true)
+    slime:SetAttribute("CarrierUserId", player.UserId)
+    player:SetAttribute("CarryingSlime", slime.Name)
+    slime:PivotTo(root.CFrame * CFrame.new(2.5, 1, -3))
+    local welds = {}
+    for _, p in ipairs(slime:GetDescendants()) do
+        if p:IsA("BasePart") then
+            p.Anchored, p.CanCollide, p.Massless = false, false, true
+            if p ~= body then
+                local weld = Instance.new("WeldConstraint")
+                weld.Part0, weld.Part1, weld.Parent = body, p, body
+                table.insert(welds, weld)
+            end
+        end
+    end
+    local grip = Instance.new("WeldConstraint")
+    grip.Part0, grip.Part1, grip.Parent = root, body, body
+    table.insert(welds, grip)
+    local speed = humanoid.WalkSpeed
+    carrying[player] = {state = state, humanoid = humanoid, speed = speed, welds = welds}
+    humanoid.WalkSpeed = math.max(6, speed * (1 - 0.35 * state.weight / math.max(1, power(player))))
+    message(player, "Captured " .. slime:GetAttribute("SlimeType") .. "! Run to the COLLECT ZONE before its parent catches you.")
+    captured:Fire(player, slime, state.weight)
+end
+
+-- Collection stores secured babies privately for this session.
+-- The later inventory feature can read these models and their hidden weights.
+local slimeSecured = Instance.new("BindableEvent")
+slimeSecured.Name, slimeSecured.Parent = "SlimeSecured", script
+local function collect(player, record)
+    local character = player.Character
+    local root = character and character:FindFirstChild("HumanoidRootPart")
+    if not root or record.humanoid.Health &lt;= 0 or not collectionTrigger then return end
+    local position = collectionTrigger.CFrame:PointToObjectSpace(root.Position)
+    local half = collectionTrigger.Size / 2
+    if math.abs(position.X) &gt; half.X or math.abs(position.Y) &gt; half.Y or math.abs(position.Z) &gt; half.Z then return end
+    local folder = secured:FindFirstChild(tostring(player.UserId))
+    if not folder then return end
+    -- Clear carrying first, so repeated frames cannot award the same baby twice.
+    carrying[player] = nil
+    for _, weld in ipairs(record.welds) do weld:Destroy() end
+    local slime = record.state.slime
+    for _, item in ipairs(slime:GetDescendants()) do
+        if item:IsA("BasePart") then item.Anchored = true end
+    end
+    slime.Parent = folder -- ServerStorage does not replicate to players.
+    slime:SetAttribute("Weight", record.state.weight)
+    slime:SetAttribute("Secured", true)
+    slime:SetAttribute("CarrierUserId", nil)
+    record.humanoid.WalkSpeed = record.speed
+    player:SetAttribute("CarryingSlime", nil)
+    player:SetAttribute("CollectedSlimes", #folder:GetChildren())
+    states[slime] = nil
+    message(player, "Secured " .. slime:GetAttribute("SlimeType") .. " baby! Collected: " .. #folder:GetChildren())
+    slimeSecured:Fire(player, slime, record.state.weight)
+end
+
+local function setupPlayer(player)
+    local folder = Instance.new("Folder")
+    folder.Name, folder.Parent = tostring(player.UserId), secured
+    player:SetAttribute("CollectedSlimes", 0)
+    if player:GetAttribute("GrabberPower") == nil then player:SetAttribute("GrabberPower", 10) end
+    player.CharacterRemoving:Connect(function() release(player) end)
+    player.CharacterAdded:Connect(function(character)
+        setupCharacter(player, character)
+        local humanoid = character:WaitForChild("Humanoid")
+        humanoid.Died:Connect(function() release(player) end)
+    end)
+    if player.Character then
+        local character = player.Character
+        task.spawn(function()
+            setupCharacter(player, character)
+            character:WaitForChild("Humanoid").Died:Connect(function() release(player) end)
+        end)
+    end
+end
+Players.PlayerAdded:Connect(setupPlayer)
+Players.PlayerRemoving:Connect(function(player)
+    release(player)
+    messageVersions[player] = nil
+    local folder = secured:FindFirstChild(tostring(player.UserId))
+    if folder then folder:Destroy() end
+end)
+for _, player in ipairs(Players:GetPlayers()) do setupPlayer(player) end
+
+RunService.Heartbeat:Connect(function()
+    for player, state in pairs(attempts) do
+        if not eligible(player, state) or (state.released and os.clock() - state.released &gt; 0.2) then
+            cancel(player)
+        end
+    end
+    for player, record in pairs(carrying) do collect(player, record) end
+    local now = os.clock()
+    for _, state in pairs(states) do
+        if state.dropped and state.dropExpires and now &gt;= state.dropExpires then
+            cancel(state.owner)
+            state.dropped, state.dropExpires = false, nil
+            state.prompt.Enabled = true
+            state.prompt.HoldDuration, state.prompt.ActionText = HOLD_SECONDS, "Pull with grabber"
+            state.slime:PivotTo(state.home)
+        end
+    end
+end)
+local slimes = workspace:WaitForChild("SlimeMap"):WaitForChild("WildSlimes")
+collectionTrigger = slimes.Parent:WaitForChild("CollectZone"):WaitForChild("CollectionTrigger")
+local function register(slime)
+    if not slime:IsA("Model") or states[slime] then return end
+    slime:WaitForChild("Mouth") -- The spawner creates the mouth last.
+    local body = slime.PrimaryPart
+    if not body then return end
+    local attachment = Instance.new("Attachment")
+    attachment.Parent = body
+    local prompt = Instance.new("ProximityPrompt")
+    prompt.Name, prompt.ObjectText, prompt.ActionText = "CapturePrompt", slime:GetAttribute("SlimeType") .. " baby", "Pull with grabber"
+    prompt.HoldDuration, prompt.MaxActivationDistance = HOLD_SECONDS, REACH
+    prompt.RequiresLineOfSight = false -- The server checks the actual path.
+    prompt.Parent = body
+    local state = {slime = slime, prompt = prompt, attachment = attachment, home = slime:GetPivot()}
+    states[slime] = state
+    prompt.PromptButtonHoldBegan:Connect(function(player)
+        if not state.dropped then begin(player, state) end
+    end)
+    prompt.PromptButtonHoldEnded:Connect(function(player)
+        if attempts[player] == state then state.released = os.clock() end
+    end)
+    prompt.Triggered:Connect(function(player) finish(player, state) end)
+end
+slimes.ChildAdded:Connect(function(slime) task.spawn(register, slime) end)
+for _, slime in ipairs(slimes:GetChildren()) do task.spawn(register, slime) end
+print("Capture ready: equip Slime Grabber, then hold E near a baby.")
+
+
+-- Only server scripts can invoke this function. It atomically releases capture ownership.
+local interrupt = Instance.new("BindableFunction")
+interrupt.Name = "InterruptForBat"
+interrupt.OnInvoke = function(player)
+    cancel(player)
+    local record = carrying[player]
+    if not record then return false end
+    local character = player.Character
+    local root = character and character:FindFirstChild("HumanoidRootPart")
+    if not root then release(player); return false end
+    local position = Vector3.new(math.clamp(root.Position.X, -38, 38), root.Position.Y, math.min(root.Position.Z, CombatRules.SafeZ - 4))
+    local params = RaycastParams.new()
+    params.FilterType = Enum.RaycastFilterType.Exclude
+    local exclusions = {record.state.slime}
+    for _, other in ipairs(Players:GetPlayers()) do
+        if other.Character then table.insert(exclusions, other.Character) end
+    end
+    local map = workspace:FindFirstChild("SlimeMap")
+    if map then
+        if map:FindFirstChild("WildSlimes") then table.insert(exclusions, map.WildSlimes) end
+        if map:FindFirstChild("Guardians") then table.insert(exclusions, map.Guardians) end
+    end
+    params.FilterDescendantsInstances = exclusions
+    local ground = workspace:Raycast(position + Vector3.new(0, 4, 0), Vector3.new(0, -100, 0), params)
+    local dropFrame
+    if ground then
+        local height = record.state.slime.PrimaryPart.Size.Y * 0.5 + 0.1
+        dropFrame = CFrame.new(ground.Position + Vector3.new(0, height, 0)) * record.state.home.Rotation
+    end
+    release(player, dropFrame)
+    message(player, dropFrame and "You dropped your baby! Equip your grabber and pick it back up." or "Your baby returned to its nursery.")
+    return dropFrame ~= nil
+end
+interrupt.Parent = script
+</ProtectedString>
+      </Properties>
+    </Item>
+    <Item class="Script" referent="RBX9">
+      <Properties>
+        <string name="Name">Guardians</string>
+        <ProtectedString name="Source">-- Roblox Luau: ServerScriptService &gt; Guardians.
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local PathfindingService = game:GetService("PathfindingService")
+local capture = script.Parent:WaitForChild("Capture")
+local captured = capture:WaitForChild("SlimeCaptured")
+local secured = capture:WaitForChild("SlimeSecured")
+local released = capture:WaitForChild("SlimeReleased")
+local caught = capture:WaitForChild("ParentCaught")
+local map = workspace:WaitForChild("SlimeMap")
+local slimes = map:WaitForChild("WildSlimes")
+local trigger = map:WaitForChild("CollectZone"):WaitForChild("CollectionTrigger")
+local safeZ = trigger.Position.Z - trigger.Size.Z / 2
+local SPEED, GRACE, CATCH_DISTANCE = 14, 1.5, 6
+local V = Vector3.new
+local records = {}
+local parents = Instance.new("Folder")
+parents.Name, parents.Parent = "Guardians", map
+
+-- PIECE 1: build a large parent with the baby's color and angry eyebrows.
+local function part(name, size, color, frame, parent, ball)
+    local p = Instance.new("Part")
+    p.Name, p.Size, p.Color, p.CFrame = name, size, color, frame
+    p.Anchored, p.CanCollide, p.CanTouch, p.CanQuery = true, false, false, false
+    p.Material = Enum.Material.SmoothPlastic
+    if ball then p.Shape = Enum.PartType.Ball end
+    p.Parent = parent
+    return p
+end
+local function register(slime)
+    if records[slime] then return records[slime] end
+    if not slime:IsA("Model") then return end
+    slime:WaitForChild("Mouth")
+    local body = slime.PrimaryPart
+    if not body then return end
+    local nest = map.Nests:FindFirstChild("Nest" .. tostring(slime:GetAttribute("NestIndex")))
+    if not nest then return end
+    local center = nest:GetAttribute("SpawnCenter")
+    local side = body.Position.X &lt; center.X and -1 or 1
+    local home = V(center.X + side * 9, 0, center.Z - 24)
+    local model = Instance.new("Model")
+    model.Name = slime:GetAttribute("SlimeType") .. "Parent"
+    model:SetAttribute("SlimeType", slime:GetAttribute("SlimeType"))
+    model:SetAttribute("State", "Idle")
+    local root = part("Root", V(1, 1, 1), body.Color, CFrame.new(home), model)
+    root.Transparency = 1
+    model.PrimaryPart = root
+    local skin = part("Body", V(14, 12, 14), body.Color, CFrame.new(home + V(0, 4.2, 0)), model, true)
+    skin.Transparency = 0.06
+    local black = Color3.fromRGB(25, 30, 24)
+    for _, x in ipairs({-2.3, 2.3}) do
+        part("Eye", V(0.9, 1.2, 0.45), black, CFrame.new(home + V(x, 5.5, -6.3)), model, true)
+        part("AngryBrow", V(2.5, 0.5, 0.45), black,
+            CFrame.new(home + V(x, 6.5, -6)) * CFrame.Angles(0, 0, math.rad(x &lt; 0 and -25 or 25)), model)
+    end
+    part("Mouth", V(2.3, 0.55, 0.4), black, CFrame.new(home + V(0, 3.6, -6.9)), model, true)
+    model.Parent = parents
+    local record = {
+        slime = slime, model = model, home = home, position = home,
+        rotation = CFrame.Angles(0, math.pi, 0), phase = 0,
+        revision = 0, nextPath = 0, waypoints = {}, waypoint = 1,
+    }
+    records[slime] = record
+    model:PivotTo(CFrame.new(home) * record.rotation)
+    return record
+end
+
+-- PIECE 2: capture starts a chase; collection, release, or leaving ends it.
+local function stop(record)
+    local player = record.target
+    if player and player:GetAttribute("ChasedBy") == record.model.Name then
+        player:SetAttribute("ChasedBy", nil)
+    end
+    record.target, record.character = nil, nil
+    record.revision = record.revision + 1
+    record.waypoints, record.waypoint, record.nextPath = {}, 1, 0
+    record.model:SetAttribute("State", "Returning")
+    record.model:SetAttribute("TargetUserId", nil)
+end
+captured.Event:Connect(function(player, slime)
+    local record = records[slime] or register(slime)
+    if not record then return end
+    if record.target then stop(record) end
+    record.target, record.character = player, player.Character
+    record.wakeAt = os.clock() + GRACE
+    record.revision = record.revision + 1
+    record.waypoints, record.waypoint, record.nextPath = {}, 1, 0
+    record.model:SetAttribute("State", "Chasing")
+    record.model:SetAttribute("TargetUserId", player.UserId)
+    player:SetAttribute("ChasedBy", record.model.Name)
+end)
+local function endChase(_, slime)
+    local record = records[slime]
+    if record then stop(record) end
+end
+secured.Event:Connect(endChase)
+released.Event:Connect(endChase)
+Players.PlayerRemoving:Connect(function(player)
+    for _, record in pairs(records) do
+        if record.target == player then stop(record) end
+    end
+end)
+
+-- PIECE 3: request paths without blocking the frame update.
+-- A revision number prevents an old path from replacing a newer chase.
+local obstacles = RaycastParams.new()
+obstacles.FilterType = Enum.RaycastFilterType.Include
+obstacles.FilterDescendantsInstances = {map.NurseryTunnel, map.Nests, map.BoundaryWalls}
+local function clearStep(position, delta)
+    for _, height in ipairs({3, 9}) do
+        if workspace:Raycast(position + V(0, height, 0), delta, obstacles) then return false end
+    end
+    return true
+end
+local function requestPath(record, goal, now)
+    if record.pathBusy or now &lt; record.nextPath then return end
+    record.pathBusy, record.nextPath = true, now + 1
+    local revision, start = record.revision, record.position
+    task.spawn(function()
+        local path = PathfindingService:CreatePath({AgentRadius = 7, AgentHeight = 11, AgentCanJump = false, WaypointSpacing = 5})
+        local ok = pcall(function() path:ComputeAsync(start + V(0, 2, 0), goal + V(0, 2, 0)) end)
+        record.pathBusy = false
+        if record.revision ~= revision then return end
+        if ok and path.Status == Enum.PathStatus.Success then
+            local waypoints = path:GetWaypoints()
+            local leavesCorridor = false
+            for _, waypoint in ipairs(waypoints) do
+                if math.abs(waypoint.Position.X) &gt; 40 or waypoint.Position.Z &gt; safeZ - 7 then
+                    leavesCorridor = true
+                    break
+                end
+            end
+            -- The wide center lane gives large parents room around nursery roofs.
+            if leavesCorridor then
+                record.waypoints, record.waypoint = {{Position = V(0, 0, start.Z)}}, 1
+            else
+                record.waypoints, record.waypoint = waypoints, 2
+            end
+        else
+            record.waypoints, record.waypoint = {}, 1
+        end
+    end)
+end
+local function tick(record, dt, now)
+    local goal
+    if record.target then
+        local player, character = record.target, record.character
+        local root = character and character:FindFirstChild("HumanoidRootPart")
+        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+        if not player.Parent or player.Character ~= character or not root or not humanoid or humanoid.Health &lt;= 0
+            or player:GetAttribute("CarryingSlime") ~= record.slime.Name or root.Position.Z &gt;= safeZ then
+            stop(record)
+        elseif now &gt;= record.wakeAt then
+            local delta = root.Position - record.position
+            local horizontal = V(delta.X, 0, delta.Z)
+            if horizontal.Magnitude &lt;= CATCH_DISTANCE and math.abs(delta.Y) &lt; 12 then
+                -- Check the line of sight before catching through an obstacle.
+                local params = RaycastParams.new()
+                params.FilterType = Enum.RaycastFilterType.Exclude
+                params.FilterDescendantsInstances = {character, parents, record.slime}
+                if not workspace:Raycast(record.position + V(0, 4, 0), root.Position - (record.position + V(0, 4, 0)), params) then
+                    caught:Fire(player, record.slime)
+                    stop(record)
+                else
+                    goal = V(math.clamp(root.Position.X, -39, 39), 0, math.min(root.Position.Z, safeZ - 7))
+                end
+            else
+                goal = V(math.clamp(root.Position.X, -39, 39), 0, math.min(root.Position.Z, safeZ - 7))
+            end
+        end
+    end
+    if not record.target and record.model:GetAttribute("State") == "Returning" then
+        if (record.position - record.home).Magnitude &lt; 1.1 then
+            record.position = record.home
+            record.model:SetAttribute("State", "Idle")
+        else
+            goal = record.home
+        end
+    end
+    local moved = false
+    if goal then
+        requestPath(record, goal, now)
+        local waypoint = record.waypoints[record.waypoint]
+        local destination = waypoint and V(waypoint.Position.X, 0, waypoint.Position.Z) or goal
+        local delta = destination - record.position
+        if delta.Magnitude &lt; 1 then
+            record.waypoint = record.waypoint + 1
+        else
+            local step = delta.Unit * math.min(delta.Magnitude, SPEED * math.min(dt, 0.1))
+            local nextPosition = record.position + step
+            if nextPosition.Z &lt;= safeZ - 7 and math.abs(nextPosition.X) &lt;= 40 and clearStep(record.position, step) then
+                record.position = nextPosition
+                record.rotation = record.rotation:Lerp(CFrame.lookAt(V(0, 0, 0), delta.Unit), math.min(1, dt * 8))
+                moved = true
+            else
+                record.nextPath = 0
+            end
+        end
+    end
+    record.phase = record.phase + dt * (moved and 8 or 2)
+    local bounce = math.abs(math.sin(record.phase)) * (moved and 0.7 or 0.08)
+    record.model:PivotTo(CFrame.new(record.position + V(0, bounce, 0)) * record.rotation)
+end
+slimes.ChildAdded:Connect(function(slime) task.spawn(register, slime) end)
+for _, slime in ipairs(slimes:GetChildren()) do task.spawn(register, slime) end
+RunService.Heartbeat:Connect(function(dt)
+    local now = os.clock()
+    for _, record in pairs(records) do tick(record, dt, now) end
+end)
+print("Guardians ready: giant parents chase captured babies and stop at the collect zone.")
+</ProtectedString>
+      </Properties>
+    </Item>
+    <Item class="Script" referent="RBX10">
+      <Properties>
+        <string name="Name">Bat</string>
+        <ProtectedString name="Source">-- Slime Bat: clients request swings; the server decides range, safety and the hit.
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StarterPack = game:GetService("StarterPack")
+local TweenService = game:GetService("TweenService")
+local Debris = game:GetService("Debris")
+local Rules = require(script.Parent:WaitForChild("CombatRules"))
+local interrupt = script.Parent:WaitForChild("Capture"):WaitForChild("InterruptForBat")
+local remote = Instance.new("RemoteEvent")
+remote.Name, remote.Parent = "SlimeBatSwing", ReplicatedStorage
+local lastSwing, stuns = {}, {}
+local tool = Instance.new("Tool")
+tool.Name, tool.CanBeDropped = "Slime Bat", false
+tool.ToolTip = "Knock back a rival and drop their baby. Bases are safe."
+tool.Grip = CFrame.new(0, -0.8, 0)
+local function part(name, size, offset, color)
+    local p = Instance.new("Part")
+    p.Name, p.Size, p.CFrame, p.Color = name, size, CFrame.new(offset), color
+    p.Material, p.CanCollide, p.CanTouch, p.Massless = Enum.Material.SmoothPlastic, false, false, true
+    p.Parent = tool
+    return p
+end
+local handle = part("Handle", Vector3.new(.38, 1.4, .38), Vector3.zero, Color3.fromRGB(62,69,89))
+local barrel = part("PaddedHead", Vector3.new(1.1, 3, 1.1), Vector3.new(0, 2, 0), Color3.fromRGB(70,218,255))
+local cap = part("EndCap", Vector3.new(1.15,.22,1.15), Vector3.new(0,3.55,0), Color3.fromRGB(166,255,49))
+for _, p in ipairs({barrel, cap}) do
+    local weld = Instance.new("WeldConstraint")
+    weld.Part0, weld.Part1, weld.Parent = handle, p, handle
+end
+tool.Parent = StarterPack
+local function getLiving(player)
+    local character = player.Character
+    local root = character and character:FindFirstChild("HumanoidRootPart")
+    local hum = character and character:FindFirstChildOfClass("Humanoid")
+    if root and hum and hum.Health &gt; 0 then return character, root, hum end
+end
+local function feedback(player, text)
+    remote:FireClient(player, "Message", text)
+end
+local function animate(bat)
+    local rest = CFrame.new(0, -.8, 0)
+    local forward = TweenService:Create(bat, TweenInfo.new(.10), {Grip = rest * CFrame.Angles(0, 0, math.rad(-95))})
+    forward:Play()
+    task.delay(.12, function()
+        if bat.Parent then TweenService:Create(bat, TweenInfo.new(.16), {Grip = rest}):Play() end
+    end)
+end
+local function knockback(player, root, humanoid, attackerRoot)
+    local now = workspace:GetServerTimeNow()
+    player:SetAttribute("BatProtectedUntil", now + Rules.HitProtection)
+    player:SetAttribute("BatStunnedUntil", now + Rules.StunDuration)
+    local record = {humanoid = humanoid, speed = humanoid.WalkSpeed, rotate = humanoid.AutoRotate}
+    stuns[player] = record
+    humanoid.WalkSpeed, humanoid.AutoRotate = 0, false
+    local delta = root.Position - attackerRoot.Position
+    local flat = Vector3.new(delta.X, 0, delta.Z)
+    local direction = flat.Magnitude &gt; .01 and flat.Unit or attackerRoot.CFrame.LookVector
+    -- Server owns the short impact, so a client cannot suppress it.
+    local canOwn = root:CanSetNetworkOwnership()
+    if canOwn then root:SetNetworkOwner(nil) end
+    root:ApplyImpulse((direction * Rules.Knockback + Vector3.new(0,12,0)) * root.AssemblyMass)
+    local glow = Instance.new("Highlight")
+    glow.Name, glow.Adornee = "BatProtection", player.Character
+    glow.FillColor, glow.OutlineColor = Color3.fromRGB(132,239,255), Color3.new(1,1,1)
+    glow.FillTransparency, glow.OutlineTransparency = .8, .25
+    glow.Parent = player.Character
+    Debris:AddItem(glow, Rules.HitProtection)
+    task.delay(Rules.StunDuration, function()
+        if stuns[player] ~= record then return end
+        stuns[player] = nil
+        if humanoid.Parent and humanoid.Health &gt; 0 then
+            humanoid.WalkSpeed, humanoid.AutoRotate = record.speed, record.rotate
+        end
+        if root.Parent and canOwn then root:SetNetworkOwnershipAuto() end
+    end)
+end
+local function clearLine(a, b, attacker, target)
+    local params = RaycastParams.new()
+    params.FilterType = Enum.RaycastFilterType.Exclude
+    local excluded = {attacker, target}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p.Character then table.insert(excluded, p.Character) end
+    end
+    local map = workspace:FindFirstChild("SlimeMap")
+    if map then
+        if map:FindFirstChild("WildSlimes") then table.insert(excluded, map.WildSlimes) end
+        if map:FindFirstChild("Guardians") then table.insert(excluded, map.Guardians) end
+    end
+    params.FilterDescendantsInstances = excluded
+    return not workspace:Raycast(a, b - a, params)
+end
+local function swing(player)
+    local character, root = getLiving(player)
+    if not character then return end
+    local bat = character:FindFirstChild(tool.Name)
+    if not bat or not bat:IsA("Tool") or not bat:FindFirstChild("PaddedHead") then return end
+    local now = workspace:GetServerTimeNow()
+    if Rules.IsStunned(player) then return end
+    if now - (lastSwing[player] or -math.huge) &lt; Rules.SwingCooldown then return end
+    -- Rate limit rejected attempts as well as accepted swings.
+    lastSwing[player] = now
+    if player:GetAttribute("CarryingSlime") then feedback(player, "Put down your baby before swinging."); return end
+    if Rules.IsSafe(character) then feedback(player, "Bases and the collect zone are safe."); return end
+    animate(bat)
+    local nearest, distance
+    for _, other in ipairs(Players:GetPlayers()) do
+        if other ~= player then
+            local c, r, h = getLiving(other)
+            if c and not Rules.IsSafe(c) and (other:GetAttribute("BatProtectedUntil") or 0) &lt;= now then
+                local delta = r.Position - root.Position
+                local d = delta.Magnitude
+                -- A short forward arc, never a hit behind the attacker or through a wall.
+                if d &lt;= Rules.Range and (d &lt; .01 or root.CFrame.LookVector:Dot(delta.Unit) &gt;= .15)
+                    and clearLine(root.Position, r.Position, character, c)
+                    and (not distance or d &lt; distance) then
+                    nearest, distance = {player = other, root = r, humanoid = h}, d
+                end
+            end
+        end
+    end
+    if nearest then
+        -- Drop before stun, so capture restores the normal walking speed first.
+        nearest.player:SetAttribute("BatProtectedUntil", now + Rules.HitProtection)
+        nearest.player:SetAttribute("BatStunnedUntil", now + Rules.StunDuration)
+        local dropped = interrupt:Invoke(nearest.player)
+        knockback(nearest.player, nearest.root, nearest.humanoid, root)
+        feedback(player, dropped and "Hit! Their baby is on the ground." or "Hit!")
+        feedback(nearest.player, dropped and "Baby dropped! Equip your grabber to recover it." or "Hit! You have two seconds of protection.")
+    end
+end
+remote.OnServerEvent:Connect(function(player, action)
+    if action == "Drop" then
+        local character = getLiving(player)
+        if character and player:GetAttribute("CarryingSlime") and not Rules.IsStunned(player) and not Rules.IsSafe(character) then
+            interrupt:Invoke(player)
+        end
+    elseif action == nil or action == "Swing" then
+        swing(player)
+    end
+end)
+local function setup(player)
+    local function characterAdded(character)
+        stuns[player] = nil
+        player:SetAttribute("BatStunnedUntil", nil)
+        player:SetAttribute("BatProtectedUntil", nil)
+        local backpack = player:WaitForChild("Backpack")
+        if player.Character == character and not backpack:FindFirstChild(tool.Name) and not character:FindFirstChild(tool.Name) then
+            tool:Clone().Parent = backpack
+        end
+    end
+    player.CharacterAdded:Connect(characterAdded)
+    if player.Character then task.spawn(characterAdded, player.Character) end
+end
+Players.PlayerAdded:Connect(setup)
+Players.PlayerRemoving:Connect(function(player) lastSwing[player], stuns[player] = nil, nil end)
+for _, player in ipairs(Players:GetPlayers()) do setup(player) end
+print("Slime Bat ready: 0.9s swings, 2s protection, safe bases, shared dropped babies.")
+</ProtectedString>
+      </Properties>
+    </Item>
+    <Item class="Script" referent="RBX14">
+      <Properties>
+        <string name="Name">BatIntegration</string>
+        <ProtectedString name="Source">-- Isolated 2-player integration suite. Not packaged in the playable build.
+local Players=game:GetService("Players")
+local RS=game:GetService("ReplicatedStorage")
+local SS=game:GetService("ServerScriptService")
+local control=Instance.new("RemoteEvent",RS);control.Name="BatTestControl"
+local ready,answers={},{}
+control.OnServerEvent:Connect(function(p,id,ok,err)
+    if id=="Ready" then ready[p]=true else answers[id]={p=p,ok=ok,err=err} end
+end)
+local sequence=0
+local function action(p,name,arg)
+    sequence+=1;local id=tostring(sequence)
+    control:FireClient(p,id,name,arg)
+    local endAt=os.clock()+9
+    repeat task.wait(.03) until answers[id] or os.clock()&gt;endAt
+    local reply=answers[id];assert(reply and reply.p==p and reply.ok,"Client action "..name..": "..tostring(reply and reply.err))
+    answers[id]=nil
+end
+local function place(p,pos,look)
+    p.Character:PivotTo(CFrame.lookAt(pos,look or pos+Vector3.new(0,0,-1)))
+    p.Character.HumanoidRootPart.AssemblyLinearVelocity=Vector3.zero
+end
+local function check(ok,name) assert(ok,name);print("BAT PASS: "..name) end
+local function run()
+    local deadline=os.clock()+120
+    repeat task.wait(.2) until #Players:GetPlayers()&gt;=2 or os.clock()&gt;deadline
+    assert(#Players:GetPlayers()&gt;=2,"Start Server and Clients with 2 players")
+    local a,b=table.unpack(Players:GetPlayers())
+    repeat task.wait(.1) until ready[a] and ready[b] or os.clock()&gt;deadline
+    assert(ready[a] and ready[b],"Clients not ready")
+    for _,p in ipairs({a,b}) do
+        p.Character:WaitForChild("HumanoidRootPart")
+        p.Backpack:WaitForChild("Slime Bat");p.Backpack:WaitForChild("Slime Grabber")
+        p:SetAttribute("GrabberPower",20)
+    end
+    local capture=SS:WaitForChild("Capture");capture:WaitForChild("InterruptForBat")
+    local rules=require(SS.CombatRules)
+    local map=workspace:WaitForChild("SlimeMap")
+    local slime=map.WildSlimes:WaitForChild("GrassSlime")
+    local prompt=slime.Body:WaitForChild("CapturePrompt")
+    local function resetCombat()
+        task.wait(1)
+        for _,p in ipairs({a,b}) do p:SetAttribute("BatProtectedUntil",nil);p:SetAttribute("BatStunnedUntil",nil) end
+    end
+    place(a,Vector3.new(0,4,180));place(b,Vector3.new(0,4,175))
+    action(a,"Bat");check(not b:GetAttribute("BatProtectedUntil"),"safe-zone attacker cannot hit")
+    resetCombat();place(a,Vector3.new(0,4,121),Vector3.new(0,4,130));place(b,Vector3.new(0,4,126))
+    action(a,"Bat");check(not b:GetAttribute("BatProtectedUntil"),"safe-zone victim cannot be hit across boundary")
+    resetCombat();place(a,Vector3.new(0,4,90));place(b,Vector3.new(0,4,70))
+    action(a,"Bat");check(not b:GetAttribute("BatProtectedUntil"),"out-of-range swing misses")
+    resetCombat();place(a,Vector3.new(0,4,90));place(b,Vector3.new(0,4,95))
+    action(a,"Bat");check(not b:GetAttribute("BatProtectedUntil"),"swing cannot hit behind attacker")
+    resetCombat();place(a,Vector3.new(0,4,90));place(b,Vector3.new(0,4,85))
+    local wall=Instance.new("Part",workspace);wall.Anchored=true;wall.Size=Vector3.new(10,10,1);wall.Position=Vector3.new(0,5,87.5)
+    action(a,"Bat");check(not b:GetAttribute("BatProtectedUntil"),"wall blocks hit");wall:Destroy()
+    resetCombat();place(a,Vector3.new(0,4,90));place(b,Vector3.new(0,4,85))
+    local health=b.Character.Humanoid.Health
+    action(a,"Bat");check((b:GetAttribute("BatProtectedUntil") or 0)&gt;workspace:GetServerTimeNow(),"valid forward hit gives protection")
+    check(b.Character.Humanoid.Health==health,"bat deals no health damage")
+    local expiry=b:GetAttribute("BatProtectedUntil")
+    place(b,Vector3.new(0,4,85));action(a,"Swing")
+    check(b:GetAttribute("BatProtectedUntil")==expiry,"rapid repeated swing is rejected")
+    task.wait(.75);place(b,Vector3.new(0,4,85));action(a,"Swing")
+    check(b:GetAttribute("BatProtectedUntil")==expiry,"protection prevents another hit after swing cooldown")
+    task.wait(.65);check(b.Character.Humanoid.WalkSpeed==16,"walking speed restored after impact")
+    resetCombat();place(a,Vector3.new(0,4,90));place(b,Vector3.new(0,4,85));action(a,"Unequip");action(a,"Swing")
+    check(not b:GetAttribute("BatProtectedUntil"),"unequipped remote cannot hit")
+    -- Move a baby to the clear lane; its original nursery/home are retained.
+    slime:PivotTo(CFrame.new(0,2,80))
+    place(b,Vector3.new(0,4,85));place(a,Vector3.new(0,4,92))
+    action(b,"Begin","GrassSlime");action(a,"Bat")
+    check(not slime.Body:FindFirstChildOfClass("Beam"),"hit breaks active capture tether")
+    task.wait(2.1);action(b,"Release","GrassSlime")
+    check(not slime:GetAttribute("Captured"),"interrupted pull cannot finish")
+    resetCombat();slime:PivotTo(CFrame.new(0,2,80));place(b,Vector3.new(0,4,85));place(a,Vector3.new(0,4,108))
+    action(b,"Capture","GrassSlime")
+    check(b:GetAttribute("CarryingSlime")=="GrassSlime","normal capture works")
+    place(a,Vector3.new(0,4,92));place(b,Vector3.new(0,4,87))
+    action(a,"Bat")
+    check(not b:GetAttribute("CarryingSlime") and not slime:GetAttribute("Captured"),"hit drops carried baby")
+    check(prompt.Enabled and prompt.HoldDuration==0,"dropped baby has instant pickup prompt")
+    task.wait(.1);check(not b:GetAttribute("ChasedBy"),"drop ends original parent chase")
+    place(a,slime.Body.Position+Vector3.new(0,3,4));action(a,"Pickup","GrassSlime")
+    check(a:GetAttribute("CarryingSlime")=="GrassSlime","another player can claim dropped baby")
+    task.wait(.1);check(a:GetAttribute("ChasedBy")=="GrassParent","parent retargets new carrier")
+    place(b,Vector3.new(0,4,110));place(a,Vector3.new(0,4,105),Vector3.new(0,4,110));resetCombat();action(a,"Bat")
+    check(not b:GetAttribute("BatProtectedUntil"),"carrying player cannot swing")
+    action(a,"Drop");check(not a:GetAttribute("CarryingSlime"),"voluntary drop works")
+    place(a,slime.Body.Position+Vector3.new(0,3,4));action(a,"Pickup","GrassSlime")
+    check(a:GetAttribute("CarryingSlime")=="GrassSlime","original carrier can recover a drop")
+    place(a,Vector3.new(0,4,126));task.wait(.5)
+    check(a:GetAttribute("CollectedSlimes")==1,"stolen drop secures exactly once")
+    local secured=game.ServerStorage.SecuredSlimes:FindFirstChild(tostring(a.UserId))
+    local baby=secured and secured:FindFirstChild("GrassSlime")
+    check(baby and type(baby:GetAttribute("Weight"))=="number","secured drop retains hidden weight")
+    print("BAT INTEGRATION COMPLETE")
+end
+task.spawn(function()
+    local ok,err=xpcall(run,debug.traceback)
+    if not ok then warn("BAT INTEGRATION FAILED: "..err) end
+    pcall(function() game:GetService("StudioTestService"):EndTest({ok=ok,error=err}) end)
+end)
+</ProtectedString>
+      </Properties>
+    </Item>
+  </Item>
+  <Item class="StarterPlayer" referent="RBX11">
+    <Properties>
+      <string name="Name">StarterPlayer</string>
+    </Properties>
+    <Item class="StarterPlayerScripts" referent="RBX12">
+      <Properties>
+        <string name="Name">StarterPlayerScripts</string>
+      </Properties>
+      <Item class="LocalScript" referent="RBX13">
+        <Properties>
+          <string name="Name">BatInput</string>
+          <ProtectedString name="Source">-- StarterPlayerScripts: standard tool activation supports mouse, touch and controller.
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ContextActionService = game:GetService("ContextActionService")
+local player = Players.LocalPlayer
+local remote = ReplicatedStorage:WaitForChild("SlimeBatSwing")
+local connected = setmetatable({}, {__mode = "k"})
+local function watch(tool)
+    if not tool:IsA("Tool") or tool.Name ~= "Slime Bat" or connected[tool] then return end
+    connected[tool] = true
+    tool.Activated:Connect(function() remote:FireServer() end)
+end
+local function characterAdded(character)
+    character.ChildAdded:Connect(watch)
+    for _, tool in ipairs(character:GetChildren()) do watch(tool) end
+end
+player.CharacterAdded:Connect(characterAdded)
+if player.Character then characterAdded(player.Character) end
+local gui = Instance.new("ScreenGui")
+gui.Name, gui.ResetOnSpawn = "BatFeedback", false
+gui.Parent = player:WaitForChild("PlayerGui")
+local label = Instance.new("TextLabel")
+label.AnchorPoint = Vector2.new(.5, 0)
+label.Position, label.Size = UDim2.new(.5,0,.18,0), UDim2.new(.8,0,0,48)
+label.BackgroundColor3, label.BackgroundTransparency = Color3.fromRGB(25,65,52), .1
+label.TextColor3, label.TextSize, label.Font = Color3.new(1,1,1), 20, Enum.Font.GothamBold
+label.TextWrapped, label.Visible, label.Parent = true, false, gui
+Instance.new("UICorner", label).CornerRadius = UDim.new(0,10)
+local version = 0
+remote.OnClientEvent:Connect(function(kind, message)
+    if kind ~= "Message" then return end
+    version += 1
+    local current = version
+    label.Text, label.Visible, label.TextTransparency = message, true, 0
+    task.delay(2, function()
+        if current ~= version then return end
+        label.Visible = false
+    end)
+end)
+
+-- Carrying players can put a baby down before switching to their bat.
+local function updateDropAction()
+    ContextActionService:UnbindAction("DropBaby")
+    if player:GetAttribute("CarryingSlime") then
+        ContextActionService:BindAction("DropBaby", function(_, state)
+            if state == Enum.UserInputState.Begin then remote:FireServer("Drop") end
+            return Enum.ContextActionResult.Sink
+        end, true, Enum.KeyCode.Q, Enum.KeyCode.ButtonB)
+        ContextActionService:SetTitle("DropBaby", "Drop Baby")
+        ContextActionService:SetPosition("DropBaby", UDim2.new(1, -160, 1, -170))
+    end
+end
+player:GetAttributeChangedSignal("CarryingSlime"):Connect(updateDropAction)
+updateDropAction()
+</ProtectedString>
+        </Properties>
+      </Item>
+      <Item class="LocalScript" referent="RBX15">
+        <Properties>
+          <string name="Name">BatTestDriver</string>
+          <ProtectedString name="Source">-- Test-only client. Included solely in Bat-Test.rbxlx.
+local Players=game:GetService("Players")
+local RS=game:GetService("ReplicatedStorage")
+local player=Players.LocalPlayer
+local control=RS:WaitForChild("BatTestControl")
+local swing=RS:WaitForChild("SlimeBatSwing")
+control.OnClientEvent:Connect(function(id,action,arg)
+    local ok,err=pcall(function()
+        local char=player.Character or player.CharacterAdded:Wait()
+        local hum=char:WaitForChild("Humanoid")
+        if action=="Capture" then
+            hum:EquipTool(player.Backpack:FindFirstChild("Slime Grabber") or char:FindFirstChild("Slime Grabber"))
+            task.wait(.2)
+            local prompt=workspace.SlimeMap.WildSlimes[arg].Body.CapturePrompt
+            prompt:InputHoldBegin();task.wait(2.2);prompt:InputHoldEnd();task.wait(.2)
+        elseif action=="Pickup" then
+            hum:EquipTool(player.Backpack:FindFirstChild("Slime Grabber") or char:FindFirstChild("Slime Grabber"))
+            task.wait(.15)
+            local prompt=workspace.SlimeMap.WildSlimes[arg].Body.CapturePrompt
+            task.wait(.3);prompt:InputHoldBegin();task.wait(.25);prompt:InputHoldEnd();task.wait(.3)
+        elseif action=="Begin" then
+            hum:EquipTool(player.Backpack:FindFirstChild("Slime Grabber") or char:FindFirstChild("Slime Grabber"))
+            task.wait(.15);workspace.SlimeMap.WildSlimes[arg].Body.CapturePrompt:InputHoldBegin();task.wait(.3)
+        elseif action=="Release" then
+            workspace.SlimeMap.WildSlimes[arg].Body.CapturePrompt:InputHoldEnd()
+        elseif action=="Bat" then
+            hum:EquipTool(player.Backpack:FindFirstChild("Slime Bat") or char:FindFirstChild("Slime Bat"))
+            task.wait(.15)
+            char["Slime Bat"]:Activate();task.wait(.15)
+        elseif action=="Swing" then swing:FireServer();task.wait(.1)
+        elseif action=="Drop" then swing:FireServer("Drop");task.wait(.15)
+        elseif action=="Unequip" then hum:UnequipTools();task.wait(.15)
+        end
+    end)
+    control:FireServer(id,ok,err)
+end)
+control:FireServer("Ready",true)
+</ProtectedString>
+        </Properties>
+      </Item>
+    </Item>
+  </Item>
+</roblox>

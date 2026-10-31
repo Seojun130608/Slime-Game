@@ -68,15 +68,15 @@ Luau
 
 ## 8. First Version
 
-- [x] One map: A grassy corridor with six fenced player bases, collection spots, and five slime nursery zones.
+- [x] One map: A grassy corridor with six open fenced player pens and five slime nursery zones.
 - [x] Six slime types: Grass, Mud, Water, Honey, Crystal, and Gold, with rarities ranging from Common to Legendary.
 - [x] Capturing: Use a Slime Grabber to pull babies free. Upgrade Grabber Power to capture heavier slimes.
 - [x] Collection zone: Bring a carried baby to the entrance collection pad to secure it for the current session.
 - [x] Chases: A giant parent chases you after a successful capture.
-- Player competition: Use a Slime Bat to interrupt captures or make players drop slimes. Bases are safe.
-- Inventory and growth: Secured babies stay in inventory until placed. Hover to see their weight; placing them starts their growth.
-- Income: Placed slimes generate cash based on their type and weight.
-- Two upgrades: Speed and Grabber Power.
+- [x] Player competition: Use a Slime Bat to interrupt captures or make players drop slimes. Bases are safe.
+- [x] Inventory and growth: Secured babies stay in inventory until released into their pen. Hover to see weight; placed slimes grow and roam inside the fences.
+- [x] Income: Slimes in the pen automatically generate cash based on their type and weight; stored slimes earn nothing.
+- [x] Two upgrades: Purchase Speed and Grabber Power with earned cash. Each has five levels; Grabber Power unlocks heavier babies, shortens pulls, and reduces carrying slowdown.
 - Rebirths: Reset cash and upgrades while keeping slimes. Cash multipliers progress through 1.5×, 2×, 2.5×, and beyond.
 - Saving: Collections, cash, upgrades, and rebirth progress save between sessions.
 
